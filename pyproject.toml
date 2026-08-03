@@ -48,6 +48,10 @@ ignore_missing_imports = true
 # files here produced an incomplete copy: 1_212 mutants generated, 0 executed,
 # and the workflow still went green.
 source_paths = ["src/wantedmt"]
+# The tests run inside mutants/, and the resolver reads its dictionaries by a
+# relative path. Without these the whole run dies on the first test with
+# FileNotFoundError: mutants/dict/brand_aliases.csv, and not one mutant is checked.
+also_copy = ["dict/", "dq/", "schema/"]
 do_not_mutate = [
     "src/wantedmt/cli.py",
     "src/wantedmt/publish.py",
