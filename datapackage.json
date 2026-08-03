@@ -1,11 +1,12 @@
 {
   "profile": "data-package",
+  "id": "https://doi.org/10.5281/zenodo.21781640",
   "name": "ua-stolen-phones-data-quality",
   "title": "UA Stolen & Lost Phones — Data Quality Edition",
   "description": "A normalised, deduplicated and quality-checked derivative of the Ukrainian open dataset of stolen and lost mobile phones published by the National Police of Ukraine on data.gov.ua. Adds record history reconstructed from the portal's revision archive, IMEI normalisation and decomposition, brand/manufacturer/model resolution from a free-text field, and the region of the registering police unit.",
   "homepage": "https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality",
-  "version": "0.1.0",
-  "created": "2026-08-01",
+  "version": "1.0.0",
+  "created": "2026-08-04",
   "licenses": [
     {
       "name": "CC-BY-4.0",

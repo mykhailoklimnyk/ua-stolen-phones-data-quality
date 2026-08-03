@@ -1,6 +1,7 @@
 # UA Stolen & Lost Phones — Data Quality Edition
 
 [![CI](https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality/actions/workflows/ci.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21781640.svg)](https://doi.org/10.5281/zenodo.21781640)
 [![data as of](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmykhailoklimnyk%2Fua-stolen-phones-data-quality%2Fmain%2Fmanifest.json&query=%24.as_of&label=data%20as%20of&color=0e9f64&cacheSeconds=3600)](manifest.json)
 [![records](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmykhailoklimnyk%2Fua-stolen-phones-data-quality%2Fmain%2Fmanifest.json&query=%24.records.total&label=records&color=2563eb&cacheSeconds=3600)](manifest.json)
 [![closed](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmykhailoklimnyk%2Fua-stolen-phones-data-quality%2Fmain%2Fmanifest.json&query=%24.records.closed&label=closed&color=6b7280&cacheSeconds=3600)](manifest.json)
@@ -223,7 +224,7 @@ edition and the original publisher. Link to the specific dataset, not merely to
 data.gov.ua:
 
 > Trofey. *UA Stolen & Lost Phones — Data Quality Edition.*
-> <https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality>
+> <https://doi.org/10.5281/zenodo.21781640>
 >
 > Derived from «Інформація про викрадені, втрачені мобільні телефони»,
 > Національна поліція України, data.gov.ua, CC BY 4.0 —

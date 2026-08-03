@@ -6,9 +6,10 @@
   "url": "https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality",
   "codeRepository": "https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality",
   "license": "https://creativecommons.org/licenses/by/4.0/",
-  "version": "0.1.0",
+  "identifier": "https://doi.org/10.5281/zenodo.21781640",
+  "version": "1.0.0",
   "dateCreated": "2026-08-01",
-  "datePublished": "2026-08-01",
+  "datePublished": "2026-08-04",
   "inLanguage": ["uk", "en"],
   "keywords": [
     "open-data", "ukraine", "mobile-phones", "imei",

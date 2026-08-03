@@ -1,6 +1,7 @@
 # Викрадені та втрачені телефони України — версія з покращеною якістю даних
 
 [![CI](https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality/actions/workflows/ci.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21781640.svg)](https://doi.org/10.5281/zenodo.21781640)
 [![дані станом на](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmykhailoklimnyk%2Fua-stolen-phones-data-quality%2Fmain%2Fmanifest.json&query=%24.as_of&label=%D0%B4%D0%B0%D0%BD%D1%96%20%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%BC%20%D0%BD%D0%B0&color=0e9f64&cacheSeconds=3600)](manifest.json)
 [![записів](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmykhailoklimnyk%2Fua-stolen-phones-data-quality%2Fmain%2Fmanifest.json&query=%24.records.total&label=%D0%B7%D0%B0%D0%BF%D0%B8%D1%81%D1%96%D0%B2&color=2563eb&cacheSeconds=3600)](manifest.json)
 [![закрито](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmykhailoklimnyk%2Fua-stolen-phones-data-quality%2Fmain%2Fmanifest.json&query=%24.records.closed&label=%D0%B7%D0%B0%D0%BA%D1%80%D0%B8%D1%82%D0%BE&color=6b7280&cacheSeconds=3600)](manifest.json)
@@ -221,7 +222,7 @@ parquet, єдине призначення яких — переобчислит
 data.gov.ua:
 
 > Trofey. *UA Stolen & Lost Phones — Data Quality Edition.*
-> <https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality>
+> <https://doi.org/10.5281/zenodo.21781640>
 >
 > Похідне від «Інформація про викрадені, втрачені мобільні телефони»,
 > Національна поліція України, data.gov.ua, CC BY 4.0 —
