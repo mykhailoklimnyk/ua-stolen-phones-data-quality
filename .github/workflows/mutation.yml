@@ -4,11 +4,17 @@ name: Mutation
 # under them one edit at a time; a mutant that survives is a change no test
 # objected to.
 #
-# The first version of this workflow generated 1,212 mutants, executed none of
-# them, counted zero survivors and reported success — a green tick for a job
-# that checked nothing, which is exactly the failure it exists to catch. So
-# `mutmut run` is no longer wrapped in `|| true`, and the report below fails on
-# an unchecked mutant, on an empty run, and on a run where nothing was killed.
+# Two ways this job has already lied, both fixed here.
+#
+# It once generated 1,212 mutants, executed none of them, and reported success:
+# `mutmut run` was wrapped in `|| true`, and the counter could not tell "none
+# survived" from "none ran".
+#
+# Then the report read `mutmut results`, which prints only the mutants that are
+# NOT killed. Grepping that for "killed" returns zero by construction, so a run
+# that killed 712 of 1,212 read as a run that killed none — and the job failed
+# for a fault that was in the reporting. The numbers now come from
+# `mutmut export-cicd-stats`, the machine-readable summary.
 
 on:
   push:
@@ -21,6 +27,12 @@ jobs:
   mutmut:
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    env:
+      # Measured 2026-08-04 in a Linux container: 712 killed of 1,128 judged,
+      # so 63%. The floor sits just under that for the same reason the
+      # data-quality gates do — a threshold far below the value it guards is
+      # not a gate.
+      FLOOR: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -41,42 +53,54 @@ jobs:
       - name: Report
         if: always()
         run: |
-          uv run mutmut results | tee mutmut.txt
-          count() { grep -c ": $1\$" mutmut.txt || true; }
-          killed=$(count killed)
-          survived=$(count survived)
-          timeout=$(count timeout)
-          suspicious=$(count suspicious)
-          unchecked=$(count "not checked")
-          total=$((killed + survived + timeout + suspicious + unchecked))
+          uv run mutmut export-cicd-stats
+          cp mutants/mutmut-cicd-stats.json .
+          uv run mutmut results > mutmut.txt || true
+          read -r killed survived total no_tests unchecked < <(jq -r '[
+            .killed, .survived, .total, .no_tests,
+            (.total - .killed - .survived - .suspicious - .timeout - .no_tests)
+          ] | @tsv' mutmut-cicd-stats.json)
+          judged=$((killed + survived))
+          score=0
+          [ "$judged" -gt 0 ] && score=$((100 * killed / judged))
           {
             echo "| outcome | mutants |"
             echo "| --- | ---: |"
             echo "| killed — a test objected | $killed |"
             echo "| **survived — nothing objected** | **$survived** |"
-            echo "| timeout | $timeout |"
-            echo "| suspicious | $suspicious |"
-            echo "| not checked | $unchecked |"
+            echo "| no test covers the line | $no_tests |"
+            echo "| never ran | $unchecked |"
+            echo ""
+            echo "**Mutation score: ${score}%** of $judged judged mutants."
           } >> "$GITHUB_STEP_SUMMARY"
+          echo "killed=$killed survived=$survived score=${score}% unchecked=$unchecked"
           if [ "$total" -eq 0 ]; then
             echo "::error::mutmut produced no results at all"
             exit 1
           fi
           if [ "$unchecked" -gt 0 ]; then
-            echo "::error::$unchecked of $total mutants never ran — this run proves nothing"
+            echo "::error::$unchecked mutants never ran — this run proves nothing"
             exit 1
           fi
-          if [ "$killed" -eq 0 ]; then
-            echo "::error::not one mutant was killed by any test"
+          if [ "$score" -lt "$FLOOR" ]; then
+            echo "::error::mutation score ${score}% is below the ${FLOOR}% floor"
             exit 1
           fi
-          echo "checked $total mutants: $killed killed, $survived survived"
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mutmut-results
-          path: mutmut.txt
+          path: |
+            mutmut.txt
+            mutmut-cicd-stats.json
           if-no-files-found: warn
 
-# mutmut runs on Linux only; on Windows it requires WSL.
+# mutmut runs on Linux only; on Windows it refuses and asks for WSL. To iterate
+# without waiting on CI, run it in a container on any Linux box:
+#
+#   git clone --depth 1 --filter=blob:none --sparse <repo> && cd repo
+#   git sparse-checkout set --no-cone '/*' '!/data'
+#   docker run --rm --cpus 6 -v "$PWD":/w -w /w \
+#     ghcr.io/astral-sh/uv:python3.14-bookworm \
+#     bash -lc 'uv sync --all-extras --dev && uv run mutmut run --max-children 6'
