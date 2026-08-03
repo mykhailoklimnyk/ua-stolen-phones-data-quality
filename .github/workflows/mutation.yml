@@ -35,13 +35,23 @@ jobs:
           uv run pytest -q tests/test_normalize.py tests/test_dates.py
           tests/test_geo.py tests/test_store.py
 
+      # With a src/ layout the mutants land in mutants/src/wantedmt, but `import
+      # wantedmt` resolves to the copy uv installed into the venv — so the tests
+      # exercise the original code and every mutant survives untouched. Removing
+      # the installed copy leaves PYTHONPATH as the only way to find the package,
+      # which is the mutated tree.
+      - name: Take the unmutated package off the import path
+        run: uv pip uninstall wantedmt
+
       - name: Mutate the rules the dataset stands on
-        run: uv run mutmut run --max-children 4
+        env:
+          PYTHONPATH: ${{ github.workspace }}/mutants/src
+        run: uv run --no-sync mutmut run --max-children 4
 
       - name: Report
         if: always()
         run: |
-          uv run mutmut results | tee mutmut.txt
+          uv run --no-sync mutmut results | tee mutmut.txt
           count() { grep -c ": $1\$" mutmut.txt || true; }
           killed=$(count killed)
           survived=$(count survived)
