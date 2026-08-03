@@ -437,15 +437,20 @@ def cmd_state(args: argparse.Namespace) -> int:
 
 
 def cmd_export(args: argparse.Namespace) -> int:
-    """Write the publishable artefacts. Raw snapshots are never among them."""
+    """Write the publishable artefacts. Raw snapshots are never among them.
+
+    Every COPY carries a total order. Without one the same state exports to
+    different bytes on different runs, and the sha256 in manifest.json becomes a
+    claim nobody can check — which reads as corruption rather than as noise.
+    """
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     store = Store(Path(args.db))
 
     try:
         store.con.execute(
-            f"COPY records_normalized TO '{(out / 'records.parquet').as_posix()}' "
-            "(FORMAT PARQUET, COMPRESSION zstd)"
+            "COPY (SELECT * FROM records_normalized ORDER BY record_key) TO "
+            f"'{(out / 'records.parquet').as_posix()}' (FORMAT PARQUET, COMPRESSION zstd)"
         )
         store.con.execute(
             "COPY (SELECT *, coalesce(status, 'folded') = 'folded' AND NOT is_suspect "
@@ -454,12 +459,12 @@ def cmd_export(args: argparse.Namespace) -> int:
         )
         store.con.execute(
             "COPY (SELECT tac, brand, manufacturer, model, records, purity "
-            "FROM dict_tac WHERE source = 'register') TO "
+            "FROM dict_tac WHERE source = 'register' ORDER BY tac) TO "
             f"'{(out / 'dict_tac.csv').as_posix()}' (HEADER, DELIMITER ',')"
         )
         store.con.execute(
-            f"COPY record_changes TO '{(out / 'record_changes.parquet').as_posix()}' "
-            "(FORMAT PARQUET, COMPRESSION zstd)"
+            "COPY (SELECT * FROM record_changes ORDER BY record_key, field, reason) TO "
+            f"'{(out / 'record_changes.parquet').as_posix()}' (FORMAT PARQUET, COMPRESSION zstd)"
         )
 
         for name in reports.AGGREGATES:

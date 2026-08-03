@@ -15,11 +15,11 @@
   "artefacts": {
     "agg_by_brand.csv": {
       "bytes": 12979,
-      "sha256": "63a84408664fe13116608636193b487b5a3c5ae54b796e4bcd7a5677e8acac23"
+      "sha256": "faba8a4b56cd2bd72ad939582e22553666b26ed0d8292fb41f466105d123bf45"
     },
     "agg_by_ovd.csv": {
       "bytes": 255412,
-      "sha256": "57bba07e4cbb21b3772f88dd6523df24a3f205cf3c29c30b026429acff4a6a0c"
+      "sha256": "519292f54dd4f52816e2e55b734113101c6d5901536154447feeb41fe4e51834"
     },
     "agg_by_year.csv": {
       "bytes": 545,
@@ -39,15 +39,15 @@
     },
     "dict_tac.csv": {
       "bytes": 465768,
-      "sha256": "c274addc1e191f7c2a3a32ae287e3162c13bc9ec7e0a7bcc158a9cb0c76bf87f"
+      "sha256": "a0a73979688472b19d570218bdf3a023c30f03b5557783ed5ade4fafa481af24"
     },
     "record_changes.parquet": {
-      "bytes": 13990082,
-      "sha256": "eac904dff864efa2c5d6f35cd6609afefde00c429d1021ac03b8b9e11198e736"
+      "bytes": 11715746,
+      "sha256": "ee82d65e238767190355961a4e54ed07c84115bb12ed723f7f88e3b80f3f7897"
     },
     "records.parquet": {
-      "bytes": 64110446,
-      "sha256": "11c1ebfec322ba4d8ce9faffc349d57f5e10f14519444e403cf74eefe7b92a48"
+      "bytes": 56264884,
+      "sha256": "0c598bdd7356dc0d712bd537b7cb2ffe562f9c60e0c2b0d99c73690042f4c771"
     },
     "snapshots.csv": {
       "bytes": 645389,

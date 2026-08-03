@@ -129,6 +129,10 @@ def weekly_review(
     return "\n".join(lines) + "\n"
 
 
+# Every aggregate ends in a total order. A tie broken by whichever row the scan
+# reached first makes the export differ between two runs over the same state,
+# and manifest.json publishes a sha256 of each artefact — a checksum nobody can
+# reproduce is worse than no checksum, because it reads as corruption.
 AGGREGATES = {
     "by_year": """
         SELECT date_trunc('year', insert_date)::DATE AS period,
@@ -142,14 +146,14 @@ AGGREGATES = {
                count(DISTINCT tac) AS tacs,
                round(100.0 * count(*) FILTER (WHERE imei_luhn_valid) / count(*), 2) AS luhn_pct
         FROM records_normalized WHERE brand IS NOT NULL
-        GROUP BY 1 ORDER BY records DESC
+        GROUP BY 1 ORDER BY records DESC, brand
     """,
     "by_ovd": """
         SELECT ovd, count(*) AS records,
                min(insert_date)::DATE AS first_record,
                max(insert_date)::DATE AS last_record
         FROM records_normalized WHERE ovd IS NOT NULL AND insert_date IS NOT NULL
-        GROUP BY 1 ORDER BY records DESC
+        GROUP BY 1 ORDER BY records DESC, ovd
     """,
     "closures": """
         SELECT disappeared_at AS period, count(*) AS closed
