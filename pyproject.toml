@@ -43,14 +43,33 @@ module = ["duckdb.*", "boto3.*"]
 ignore_missing_imports = true
 
 [tool.mutmut]
-paths_to_mutate = [
-    "src/wantedmt/normalize/text.py",
-    "src/wantedmt/normalize/imei.py",
-    "src/wantedmt/normalize/dates.py",
-    "src/wantedmt/normalize/geo.py",
-    "src/wantedmt/store.py",
+# mutmut copies the tree into mutants/ and runs the tests there, so it needs the
+# whole package present even when only a few files are mutated. Naming single
+# files here produced an incomplete copy: 1_212 mutants generated, 0 executed,
+# and the workflow still went green.
+source_paths = ["src/wantedmt"]
+do_not_mutate = [
+    "src/wantedmt/cli.py",
+    "src/wantedmt/publish.py",
+    "src/wantedmt/notify.py",
+    "src/wantedmt/sources.py",
+    "src/wantedmt/download.py",
+    "src/wantedmt/config.py",
+    "src/wantedmt/reports.py",
+    "src/wantedmt/backfill.py",
+    "src/wantedmt/dq.py",
+    "src/wantedmt/sql.py",
+    "src/wantedmt/normalize/apply.py",
+    "src/wantedmt/normalize/tac.py",
 ]
-tests_dir = ["tests/"]
+# Every mutant reruns this selection, so it holds the fast tests that actually
+# assert the rules -- not the backfill queue tests, which spend seconds apiece.
+pytest_add_cli_args_test_selection = [
+    "tests/test_normalize.py",
+    "tests/test_dates.py",
+    "tests/test_geo.py",
+    "tests/test_store.py",
+]
 
 [dependency-groups]
 dev = [

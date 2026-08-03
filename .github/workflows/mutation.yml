@@ -1,5 +1,15 @@
 name: Mutation
 
+# Do the tests test anything, or do they merely run? mutmut changes the rules
+# under them one edit at a time; a mutant that survives is a change no test
+# objected to.
+#
+# The first version of this workflow generated 1,212 mutants, executed none of
+# them, counted zero survivors and reported success — a green tick for a job
+# that checked nothing, which is exactly the failure it exists to catch. So
+# `mutmut run` is no longer wrapped in `|| true`, and the report below fails on
+# an unchecked mutant, on an empty run, and on a run where nothing was killed.
+
 on:
   push:
     tags: ["v*"]
@@ -10,7 +20,7 @@ on:
 jobs:
   mutmut:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
 
@@ -20,20 +30,53 @@ jobs:
 
       - run: uv sync --all-extras --dev
 
+      - name: The selected tests pass before anything is mutated
+        run: >-
+          uv run pytest -q tests/test_normalize.py tests/test_dates.py
+          tests/test_geo.py tests/test_store.py
+
       - name: Mutate the rules the dataset stands on
-        run: uv run mutmut run --max-children 4 || true
+        run: uv run mutmut run --max-children 4
 
       - name: Report
+        if: always()
         run: |
           uv run mutmut results | tee mutmut.txt
-          survived=$(uv run mutmut results | grep -c '^ *[0-9]*: survived' || true)
-          echo "survived: $survived"
+          count() { grep -c ": $1\$" mutmut.txt || true; }
+          killed=$(count killed)
+          survived=$(count survived)
+          timeout=$(count timeout)
+          suspicious=$(count suspicious)
+          unchecked=$(count "not checked")
+          total=$((killed + survived + timeout + suspicious + unchecked))
+          {
+            echo "| outcome | mutants |"
+            echo "| --- | ---: |"
+            echo "| killed — a test objected | $killed |"
+            echo "| **survived — nothing objected** | **$survived** |"
+            echo "| timeout | $timeout |"
+            echo "| suspicious | $suspicious |"
+            echo "| not checked | $unchecked |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$total" -eq 0 ]; then
+            echo "::error::mutmut produced no results at all"
+            exit 1
+          fi
+          if [ "$unchecked" -gt 0 ]; then
+            echo "::error::$unchecked of $total mutants never ran — this run proves nothing"
+            exit 1
+          fi
+          if [ "$killed" -eq 0 ]; then
+            echo "::error::not one mutant was killed by any test"
+            exit 1
+          fi
+          echo "checked $total mutants: $killed killed, $survived survived"
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: mutmut-results
           path: mutmut.txt
+          if-no-files-found: warn
 
 # mutmut runs on Linux only; on Windows it requires WSL.
-
-
