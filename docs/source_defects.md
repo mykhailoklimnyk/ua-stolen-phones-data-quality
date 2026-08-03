@@ -172,8 +172,8 @@ number is the only sign that a file was assembled twice.
 ## The register stopped publishing on the day of the invasion
 
 **Measured 2026-08-03.** The last file before the longest silence in the series
-is dated **2022-02-23**. The full-scale invasion began the following morning.
-Publication resumed 177 days later.
+is dated **2022-02-23**. Russia's full-scale invasion of Ukraine began the
+following morning, 24 February 2022. Publication resumed 177 days later.
 
 That much is a gap like the others in the table below. What sits underneath it is
 not.
@@ -221,6 +221,14 @@ months before 2022-02-23 against the twelve months after:
 
 The ordering is a map. Kherson, occupied for that entire window, reports exactly
 zero. Zakarpattia, furthest west, is unchanged.
+
+Kherson also settles what the zero means. The register never lost the oblast —
+46 distinct units name it — and those units did not stop existing, they stopped
+registering. The last record from one of them is timestamped **2022-02-23
+16:21**, the afternoon before the invasion; the next is **2023-03-03**, some four
+months after the city was retaken. It resumes at roughly a tenth of what it was:
+63 records in the second half of 2023 against 672 in the second half of 2021.
+Absence here is territory, not a deleted unit.
 
 What a reader has to take from this: across 2022 a fall in this dataset is not a
 fall in phone theft. It is a police service under invasion, an export that
