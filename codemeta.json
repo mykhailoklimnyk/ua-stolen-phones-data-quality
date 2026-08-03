@@ -1,0 +1,57 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "Dataset",
+  "name": "UA Stolen & Lost Phones — Data Quality Edition",
+  "description": "A normalised, deduplicated and quality-checked derivative of the Ukrainian open dataset of stolen and lost mobile phones published by the National Police of Ukraine on data.gov.ua. Reconstructs record history from the portal's revision archive, normalises IMEI and free-text brand/model fields, and reports data quality per build.",
+  "url": "https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality",
+  "codeRepository": "https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality",
+  "license": "https://creativecommons.org/licenses/by/4.0/",
+  "version": "0.1.0",
+  "dateCreated": "2026-08-01",
+  "datePublished": "2026-08-01",
+  "inLanguage": ["uk", "en"],
+  "keywords": [
+    "open-data", "ukraine", "mobile-phones", "imei",
+    "data-quality", "normalization", "data.gov.ua", "scd2"
+  ],
+  "creator": {
+    "@type": "Organization",
+    "name": "Trofey",
+    "url": "https://trofey.app"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Trofey",
+    "url": "https://trofey.app"
+  },
+  "maintainer": {
+    "@type": "Person",
+    "givenName": "Mykhailo",
+    "familyName": "Klimnyk",
+    "@id": "https://orcid.org/0009-0005-5463-6981"
+  },
+  "isBasedOn": [
+    {
+      "@type": "Dataset",
+      "name": "Інформація про викрадені, втрачені мобільні телефони",
+      "url": "https://data.gov.ua/dataset/30b67898-1968-4d99-8058-298b56f22bff",
+      "license": "https://creativecommons.org/licenses/by/4.0/",
+      "creator": { "@type": "Organization", "name": "Національна поліція України" }
+    },
+    {
+      "@type": "Dataset",
+      "name": "Інформація про викрадені, втрачені мобільні телефони (архів МВС)",
+      "url": "https://data.gov.ua/dataset/5c6c156f-21ee-42cd-8da3-dcde6828be97",
+      "license": "https://creativecommons.org/licenses/by/4.0/",
+      "creator": { "@type": "Organization", "name": "Міністерство внутрішніх справ України" }
+    }
+  ],
+  "programmingLanguage": { "@type": "ComputerLanguage", "name": "Python", "version": ">=3.13" },
+  "runtimePlatform": "Python 3.13",
+  "softwareRequirements": ["duckdb", "httpx", "tenacity", "structlog", "pyyaml"],
+  "distribution": {
+    "@type": "DataDownload",
+    "encodingFormat": "application/vnd.apache.parquet",
+    "contentUrl": "https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality/releases"
+  }
+}

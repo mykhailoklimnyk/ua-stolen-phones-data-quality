@@ -1,0 +1,55 @@
+# Data — never in git. Derived snapshots ship via GitHub Releases.
+data/*
+!data/history/
+*.duckdb
+*.duckdb.wal
+*.parquet
+!data/history/**/*.parquet
+*.csv
+!dict/*.csv
+*.json.zst
+*.zip
+
+# Raw source dumps — by design we never keep them (see docs/methodology.md)
+raw/
+tmp/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# IDE / tooling
+.vscode/
+.idea/
+.claude/
+CLAUDE.md
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Internal notes — product/design strategy, not for the public repo
+internal/
+
+# Personal data is collected but never published — it lives only in the local
+# working database, which must not be shared or backed up to a public place.
+quarantine*
+
+# Third-party reference data: MIT-licensed, not ours to redistribute, and
+# 11.8 MB. Fetch it with scripts/fetch_tac_db.py. Deliberately outside data/,
+# which is cleared between backfill attempts — the file was lost that way once.
+vendor/
+
+# Built artefacts, rewritten on every run. manifest.json in the root is the
+# one that IS committed — it is how a consumer sees that anything changed.
+data/export/
+
+# Reports are published, not committed. The first one belongs to the first
+# public release, not to the development that preceded it.
+dq/reports/

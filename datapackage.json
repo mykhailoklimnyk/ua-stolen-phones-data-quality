@@ -1,0 +1,134 @@
+{
+  "profile": "data-package",
+  "name": "ua-stolen-phones-data-quality",
+  "title": "UA Stolen & Lost Phones — Data Quality Edition",
+  "description": "A normalised, deduplicated and quality-checked derivative of the Ukrainian open dataset of stolen and lost mobile phones published by the National Police of Ukraine on data.gov.ua. Adds record history reconstructed from the portal's revision archive, IMEI normalisation and decomposition, brand/manufacturer/model resolution from a free-text field, and the region of the registering police unit.",
+  "homepage": "https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality",
+  "version": "0.1.0",
+  "created": "2026-08-01",
+  "licenses": [
+    {
+      "name": "CC-BY-4.0",
+      "path": "https://creativecommons.org/licenses/by/4.0/",
+      "title": "Creative Commons Attribution 4.0 International"
+    }
+  ],
+  "contributors": [
+    { "title": "Trofey", "path": "https://trofey.app", "role": "author" }
+  ],
+  "keywords": [
+    "open-data", "ukraine", "mobile-phones", "imei",
+    "data-quality", "normalization", "data.gov.ua", "scd2"
+  ],
+  "sources": [
+    {
+      "title": "Інформація про викрадені, втрачені мобільні телефони",
+      "path": "https://data.gov.ua/dataset/30b67898-1968-4d99-8058-298b56f22bff",
+      "author": "Національна поліція України"
+    },
+    {
+      "title": "Інформація про викрадені, втрачені мобільні телефони (архів МВС)",
+      "path": "https://data.gov.ua/dataset/5c6c156f-21ee-42cd-8da3-dcde6828be97",
+      "author": "Міністерство внутрішніх справ України"
+    }
+  ],
+  "resources": [
+    {
+      "name": "records",
+      "path": "records.parquet",
+      "format": "parquet",
+      "mediatype": "application/vnd.apache.parquet",
+      "description": "One row per register record, with source fields preserved alongside every derived one so each derivation can be audited against its input. Lifecycle dates are the dates the register was READ, not the dates events happened: first_seen_days and disappeared_days give the width of the window each one stands for, and a NULL window is unbounded rather than zero.",
+      "schema": { "path": "schema/schema.json" }
+    },
+    {
+      "name": "dict-tac",
+      "path": "dict_tac.csv",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "description": "TAC to brand/manufacturer/model, derived solely from the source register by consensus among records sharing a code. Rows contributed by third-party lists are used internally but are not published here.",
+      "schema": {
+        "fields": [
+          { "name": "tac", "type": "string", "description": "Type Allocation Code, the leading 8 digits of an IMEI" },
+          { "name": "brand", "type": "string" },
+          { "name": "manufacturer", "type": "string" },
+          { "name": "model", "type": "string" },
+          { "name": "records", "type": "integer", "description": "Records supporting the entry" },
+          { "name": "purity", "type": "number", "description": "Share of those records agreeing on the brand" }
+        ]
+      }
+    },
+    {
+      "name": "record-changes",
+      "path": "record_changes.parquet",
+      "format": "parquet",
+      "description": "Before and after for every value this project altered, with the reason — the audit trail from the published value back to what the source said.",
+      "schema": {
+        "fields": [
+          { "name": "record_key", "type": "string" },
+          { "name": "field", "type": "string" },
+          { "name": "value_before", "type": "string" },
+          { "name": "value_after", "type": "string" },
+          { "name": "reason", "type": "string" }
+        ]
+      }
+    },
+    {
+      "name": "snapshots",
+      "path": "snapshots.csv",
+      "format": "csv",
+      "description": "One row per revision the portal published, folded or not: counts, why it was skipped or distrusted, and whether it carried new content. A snapshot dropping more of the register than the elapsed days allow is recorded but never permitted to close anything.",
+      "schema": {
+        "fields": [
+          { "name": "source", "type": "string" },
+          { "name": "snapshot_date", "type": "date" },
+          { "name": "record_count", "type": "integer" },
+          { "name": "appeared", "type": "integer" },
+          { "name": "changed", "type": "integer" },
+          { "name": "disappeared", "type": "integer", "description": "Records this snapshot was trusted to close" },
+          { "name": "missing", "type": "integer", "description": "Records absent from it, recorded whether or not they were closed" },
+          { "name": "gap_days", "type": "integer", "description": "Days since the previous folded snapshot" },
+          { "name": "status", "type": "string", "description": "folded, duplicate (byte-identical to an earlier revision), skipped or failed" },
+          { "name": "content_is_new", "type": "boolean", "description": "False for a republication of bytes already seen. Nineteen revisions between 2020-09-28 and 2021-03-29 reissue the file of 2020-09-22." },
+          { "name": "rows_raw", "type": "integer" },
+          { "name": "rows_dupe_id", "type": "integer", "description": "Rows dropped because their id repeats inside the same file" },
+          { "name": "rows_repaired", "type": "integer", "description": "Structural defects repaired before parsing" },
+          { "name": "read_mode", "type": "string", "description": "direct, or repaired when the file needed fixing to parse" },
+          { "name": "is_suspect", "type": "boolean" },
+          { "name": "suspect_reason", "type": "string" }
+        ]
+      }
+    },
+    {
+      "name": "observations",
+      "path": "agg_observations.csv",
+      "format": "csv",
+      "description": "The dates on which the register was actually read. Republished bytes and distrusted snapshots are excluded, so a row here is a reading rather than a file. No date in this dataset can be more precise than the interval between two of these rows — see docs/source_defects.md.",
+      "schema": {
+        "fields": [
+          { "name": "snapshot_date", "type": "date" },
+          { "name": "source", "type": "string" },
+          { "name": "record_count", "type": "integer" },
+          { "name": "days_since_previous", "type": "integer" }
+        ]
+      }
+    },
+    {
+      "name": "monthly-coverage",
+      "path": "agg_monthly_coverage.csv",
+      "format": "csv",
+      "description": "Every month of the register's life, including the months nobody looked. Read the arrivals column together with is_measured: a zero in an unobserved month means nothing was measured, not that nothing happened. The export was frozen from 2020-09-22 to 2021-03-29.",
+      "schema": {
+        "fields": [
+          { "name": "period", "type": "date" },
+          { "name": "days_observed", "type": "integer" },
+          { "name": "days_in_month", "type": "integer" },
+          { "name": "coverage_pct", "type": "number" },
+          { "name": "longest_gap_days", "type": "integer" },
+          { "name": "first_seen_here", "type": "integer", "description": "Records read for the first time in this month" },
+          { "name": "is_measured", "type": "boolean", "description": "False where the register was not read at all that month" }
+        ]
+      }
+    }
+  ]
+}

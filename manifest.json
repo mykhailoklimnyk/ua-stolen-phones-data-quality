@@ -1,0 +1,57 @@
+{
+  "dataset": "ua-stolen-phones-data-quality",
+  "as_of": "2026-08-03",
+  "observations": 1778,
+  "records": {
+    "total": 1186749,
+    "present": 1062520,
+    "closed": 124229
+  },
+  "coverage": {
+    "brand": 0.9969,
+    "model": 0.9695,
+    "imei_luhn_valid": 0.8359
+  },
+  "artefacts": {
+    "agg_by_brand.csv": {
+      "bytes": 12979,
+      "sha256": "63a84408664fe13116608636193b487b5a3c5ae54b796e4bcd7a5677e8acac23"
+    },
+    "agg_by_ovd.csv": {
+      "bytes": 255412,
+      "sha256": "57bba07e4cbb21b3772f88dd6523df24a3f205cf3c29c30b026429acff4a6a0c"
+    },
+    "agg_by_year.csv": {
+      "bytes": 545,
+      "sha256": "d236bfe930c5a959424ecb2227615d0e18feca2d8f9ea21cc5dfa248e422d8df"
+    },
+    "agg_closures.csv": {
+      "bytes": 21073,
+      "sha256": "f9fc83193c27f0a19c0f9c66bb9f938c7c5713fabb907589f930a5f55dd17857"
+    },
+    "agg_monthly_coverage.csv": {
+      "bytes": 2954,
+      "sha256": "f5790d8edd327b0651f84b4e58527425f990ed425653ba139d4c9df06afa8e73"
+    },
+    "agg_observations.csv": {
+      "bytes": 44214,
+      "sha256": "9f9d0d2af827839ebb5144790c8732ee6d1c35be8ac3df176c3f2e77f655f648"
+    },
+    "dict_tac.csv": {
+      "bytes": 465768,
+      "sha256": "c274addc1e191f7c2a3a32ae287e3162c13bc9ec7e0a7bcc158a9cb0c76bf87f"
+    },
+    "record_changes.parquet": {
+      "bytes": 13990082,
+      "sha256": "eac904dff864efa2c5d6f35cd6609afefde00c429d1021ac03b8b9e11198e736"
+    },
+    "records.parquet": {
+      "bytes": 64110446,
+      "sha256": "11c1ebfec322ba4d8ce9faffc349d57f5e10f14519444e403cf74eefe7b92a48"
+    },
+    "snapshots.csv": {
+      "bytes": 645389,
+      "sha256": "432d3b9ed3c0dc9b0c62946dab560b878ce63bb5d1ac15cc65f539604873ad0f"
+    }
+  }
+}

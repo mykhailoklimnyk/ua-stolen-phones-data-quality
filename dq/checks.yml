@@ -1,0 +1,342 @@
+# ─── DQ config for the normalised WantedMT dataset ───
+# Same shape as the Dagster open_data_hub configs: dataset-level guards plus
+# per-field checks with an explicit severity.
+#
+# Severity policy — a check is `critical` only when it can PROVE a structural
+# defect, and `warning`/`info` when it merely reports a distribution:
+#   critical  the record is unusable or an invariant of the source is broken
+#   warning   a real quality problem the consumer must know about, not a blocker
+#   info      measured for the report, never fails the build
+#
+# The point of the split is that a check which fails every run gets muted, and a
+# muted check reports nothing at all. So thresholds sit where the data actually
+# is (measured 2026-08-03), not where we would like it to be — and equally not
+# far below it, which is the same failure wearing a friendlier face.
+#
+# One deliberate departure from "critical means structural": coverage of brand,
+# model, region and imei_norm is blocking. Those four measure OUR output, not the
+# source's, and the incident that produced these numbers — a normalise pass
+# without --external-tac — is a pipeline defect that a distribution-shaped check
+# is the only thing positioned to catch.
+
+dataset_key: wantedmt
+description: "Інформація про викрадені, втрачені мобільні телефони — нормалізована версія"
+table: records_normalized
+
+# This table is cumulative — a closed record stays in it — so the count only
+# ever rises: 1_186_749 on 2026-08-03. The floor therefore sits just under the
+# measured value rather than at a round number far below it. A build that sees
+# fewer rows than the last one did read a truncated file.
+row_count_min: 1150000
+
+fields:
+
+  record_key:
+    nullable: false
+    type: string
+    severity: critical
+
+  imei_raw:
+    nullable: false        # measured: `imei` is populated in 100% of records
+    type: string
+    severity: critical
+
+  imei_norm:
+    nullable: true
+    type: string
+    length: 15
+    regex: "^[0-9]{15}$"
+    # 99.64% of records yield a usable identifier after length repair. This is
+    # our own output, not the source's, so it is gated where it actually sits.
+    min_fill_rate: 0.99
+    severity: critical
+    distinct_count: true
+
+  imei_kind:
+    nullable: false
+    type: string
+    allowed_values: ["IMEI", "IMEISV", "SERIAL", "INVALID"]
+    severity: critical
+
+  imei_luhn_valid:
+    nullable: true
+    type: boolean
+    # 83.89% of full-length identifiers pass Luhn (2026-08-03). This one is a
+    # property of the source rather than a defect we introduce, so it stays a
+    # warning — and it is the gate most likely to move: records arriving in the
+    # last 30 days pass at 79.49%, so the aggregate drifts slowly downward. When
+    # it trips, the answer is to record the drift, not to lower the number.
+    min_true_share: 0.82
+    severity: warning
+
+  tac:
+    nullable: true
+    type: string
+    length: 8
+    severity: warning
+    distinct_count: true
+
+  rbi:
+    nullable: true
+    type: string
+    length: 2
+    severity: info
+    distinct_count: true
+
+  brand:
+    nullable: true
+    type: string
+    # The brief asked for 90%; the pipeline delivers 99.69%, so 90% would only
+    # notice a catastrophe. Measured drift is 0.04pp a year — arrivals resolve at
+    # 99.51% against a base of 1.19M — so 0.99 is decades of headroom.
+    min_fill_rate: 0.99
+    severity: critical
+    distinct_count: true
+
+  manufacturer:
+    nullable: true
+    type: string
+    severity: warning
+    distinct_count: true
+
+  snr:
+    nullable: true
+    type: string
+    length: 6
+    severity: warning
+
+  check_digit:
+    nullable: true
+    type: string
+    length: 1
+    severity: warning
+
+  model:
+    nullable: true
+    type: string
+    # This gate exists because of a measured incident, and 0.60 at severity
+    # `info` would have slept through it: normalising without --external-tac
+    # takes model coverage from 96.95% to 64.5%, because build() re-derives the
+    # register's own TAC rows from scratch on every pass. A gate 37 points below
+    # the value it guards is not a gate.
+    #
+    # Arrivals resolve at 93.55% — new handsets are unknown to free TAC lists
+    # for a year or two — against a base of 1.19M growing by ~33 records a day.
+    # That is a drag of about 0.04pp a year, so 0.95 has decades of headroom
+    # while still catching a collapse on the day it happens.
+    min_fill_rate: 0.95
+    severity: critical
+    distinct_count: true
+
+  nz_method:
+    nullable: false
+    type: string
+    allowed_values: ["exact", "prefix", "glued", "fuzzy", "none", "empty"]
+    severity: critical
+
+  nz_raw:
+    nullable: true
+    type: string
+    severity: info
+    distinct_count: true
+
+  ovd:
+    nullable: true
+    type: string
+    severity: warning
+    distinct_count: true
+
+  region:
+    nullable: true
+    type: string
+    # 99.60%, and arrivals resolve at 100% — this reads our own dictionary of
+    # 27 oblasts, not anything the source controls.
+    min_fill_rate: 0.99
+    severity: critical
+    distinct_count: true
+
+  insert_date:
+    nullable: true
+    type: date
+    min_value: "2004-01-01"
+    max_value: today
+    severity: critical
+    distinct_count: true
+
+  dk:
+    nullable: true
+    type: date
+    min_value: "2004-01-01"
+    max_value: today
+    severity: critical
+
+  insert_date_implausible:
+    nullable: false
+    type: boolean
+    # Dates outside the plausible window are nulled and counted: 0.20% measured
+    # on 2026-08-03. A jump means the source changed how it writes dates.
+    max_true_share: 0.005
+    severity: warning
+
+  first_seen:
+    nullable: false
+    type: date
+    severity: critical
+
+  last_seen:
+    nullable: false
+    type: date
+    severity: critical
+
+  is_present:
+    nullable: false
+    type: boolean
+    severity: critical
+
+# ─── Cross-field invariants ───
+# Structural relationships, all blocking: each states something that cannot be
+# true of a correctly built table regardless of what the source publishes.
+assertions:
+
+  - name: last_seen_not_before_first_seen
+    title: "Запис не може зникнути раніше, ніж з'явився"
+    title_en: "A record cannot disappear before it appeared"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized WHERE last_seen < first_seen"
+
+  - name: present_records_have_no_disappearance_date
+    title: "Активний запис не має дати зняття з обліку"
+    title_en: "An active record has no removal date"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized WHERE is_present AND disappeared_at IS NOT NULL"
+
+  - name: closed_records_have_disappearance_date
+    title: "Знятий з обліку запис має дату зняття"
+    title_en: "A closed record has a removal date"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized WHERE NOT is_present AND disappeared_at IS NULL"
+
+  - name: disappearance_not_before_last_seen
+    title: "Дата зняття не раніша за останню появу в реєстрі"
+    title_en: "Removal is not dated before the last sighting"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized WHERE disappeared_at IS NOT NULL AND disappeared_at < last_seen"
+
+  - name: usable_imei_is_exactly_15_digits
+    title: "Придатний IMEI складається рівно з 15 цифр"
+    title_en: "A usable IMEI is exactly 15 digits"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized WHERE imei_norm IS NOT NULL AND NOT regexp_matches(imei_norm, '^[0-9]{15}$')"
+
+  - name: tac_is_prefix_of_imei
+    title: "Код моделі (TAC) — це перші 8 цифр самого IMEI"
+    title_en: "The model code (TAC) is the leading 8 digits of the IMEI"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized WHERE imei_norm IS NOT NULL AND tac <> substr(imei_norm, 1, 8)"
+
+  # A brand is legitimate when the text resolved it, or when it was inherited
+  # from the record's own TAC — in which case tac_confidence carries the
+  # dictionary purity behind it. Anything else has no provenance at all.
+  - name: resolved_brand_has_provenance
+    title: "У кожної визначеної марки видно, звідки вона взялась"
+    title_en: "Every resolved brand states where it came from"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized WHERE brand IS NOT NULL AND nz_method NOT IN ('exact','prefix','glued','fuzzy') AND brand_source IS NULL"
+
+  - name: manufacturer_without_brand
+    title: "Виробник не вказаний там, де немає марки"
+    title_en: "No manufacturer without a brand"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized WHERE manufacturer IS NOT NULL AND brand IS NULL"
+
+  - name: imei_parts_reassemble
+    title: "Розібраний IMEI складається назад без втрат"
+    title_en: "The split IMEI reassembles without loss"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized WHERE imei_norm IS NOT NULL AND tac || snr || check_digit <> imei_norm"
+
+  - name: model_without_brand
+    title: "Модель не вказана без марки"
+    title_en: "No model without a brand"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized WHERE model IS NOT NULL AND brand IS NULL"
+
+  # The dictionary must hold at most one row per TAC: a duplicate turns the
+  # enrichment join into a fan-out and silently multiplies the register.
+  - name: dict_tac_has_one_row_per_tac
+    title: "Довідник моделей не має дублікатів"
+    title_en: "The model dictionary holds no duplicates"
+    severity: critical
+    sql: "SELECT count(*) FROM (SELECT tac FROM dict_tac GROUP BY tac HAVING count(*) > 1)"
+
+  # Two sources must never claim the same TAC: external rows are only admitted
+  # for codes the register could not label itself.
+  - name: dict_tac_sources_do_not_overlap
+    title: "Два джерела не претендують на один код моделі"
+    title_en: "Two sources never claim the same model code"
+    severity: critical
+    sql: "SELECT count(*) FROM (SELECT tac FROM dict_tac GROUP BY tac HAVING count(DISTINCT source) > 1)"
+
+  - name: region_is_a_known_oblast
+    title: "Регіон — одна з 27 офіційних адміністративних одиниць"
+    title_en: "The region is one of the 27 official units"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized WHERE region IS NOT NULL AND region NOT LIKE '%область' AND region NOT IN ('м. Київ','м. Севастополь','Автономна Республіка Крим')"
+
+  - name: published_view_carries_no_personal_data
+    title: "У публікованій вітрині немає персональних даних"
+    title_en: "The published view carries no personal data"
+    severity: critical
+    sql: "SELECT count(*) FROM information_schema.columns WHERE table_name = 'records_normalized' AND lower(column_name) IN ('nomer', 'phone', 'msisdn')"
+
+  - name: record_key_is_unique
+    title: "Кожен запис реєстру трапляється рівно один раз"
+    title_en: "Each register record occurs exactly once"
+    severity: critical
+    sql: "SELECT count(*) FROM (SELECT record_key FROM records_normalized GROUP BY 1 HAVING count(*) > 1)"
+
+  # Every snapshot that closed records must itself be trusted: a suspect
+  # snapshot is recorded but must never have been allowed to close anything.
+  - name: suspect_snapshots_closed_nothing
+    title: "Сумнівне вивантаження нікого не зняло з обліку"
+    title_en: "A suspect publication closed nothing"
+    severity: critical
+    sql: "SELECT count(*) FROM snapshots WHERE is_suspect AND coalesce(disappeared, 0) > 0"
+
+  # --- Dates may not claim precision the observation calendar cannot support ---
+  #
+  # Every lifecycle date in this dataset is the date of a READING, never the date
+  # of an event: a record entered the register somewhere between the previous
+  # reading and the one that first showed it. Where those two readings are 188
+  # days apart — as they are across the 2020-2021 freeze — the date is a
+  # six-month bracket wearing the costume of a day.
+  #
+  # These checks make that structural rather than a footnote. A date that is not
+  # a reading is invented, and an invented date is worse than a missing one: a
+  # reader can see a gap but cannot see a fabrication.
+  - name: first_seen_is_an_actual_reading
+    title: "Дата першої появи збігається з днем, коли реєстр справді читали"
+    title_en: "The first-seen date is a day the register was actually read"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized r WHERE r.first_seen IS NOT NULL AND NOT EXISTS (SELECT 1 FROM observations o WHERE o.snapshot_date = r.first_seen)"
+
+  - name: disappearance_is_an_actual_reading
+    title: "Дата зникнення збігається з днем, коли реєстр справді читали"
+    title_en: "The disappearance date is a day the register was actually read"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized r WHERE r.disappeared_at IS NOT NULL AND NOT EXISTS (SELECT 1 FROM observations o WHERE o.snapshot_date = r.disappeared_at)"
+
+  - name: date_windows_are_never_negative
+    title: "Вікна невизначеності не бувають від'ємні"
+    title_en: "The uncertainty windows are never negative"
+    severity: critical
+    sql: "SELECT count(*) FROM records_normalized WHERE coalesce(first_seen_days, 0) < 0 OR coalesce(disappeared_days, 0) < 0"
+
+  # A republished file is not a reading. Counting the 19 identical reissues of
+  # the 2020-09-22 snapshot as observations would say the register was checked
+  # through that winter and never moved.
+  - name: observations_exclude_republished_bytes
+    title: "Повторно видані байти не рахуються за спостереження"
+    title_en: "Republished bytes do not count as observations"
+    severity: critical
+    sql: "SELECT count(*) FROM observations o JOIN snapshot_duplicates d ON d.source = o.source AND d.snapshot_date = o.snapshot_date"

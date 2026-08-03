@@ -1,0 +1,143 @@
+alias,brand,manufacturer,note
+SAMSUNG,Samsung,Samsung,latin
+САМСУНГ,Samsung,Samsung,translit-uk-ru
+SAMSUN,Samsung,Samsung,typo
+SAMSUMG,Samsung,Samsung,typo
+SAMSNG,Samsung,Samsung,typo
+NOKIA,Nokia,Nokia,latin
+НОКИА,Nokia,Nokia,translit-ru
+НОКІА,Nokia,Nokia,translit-uk
+НОКИЯ,Nokia,Nokia,translit-ru
+NOKIA CORPORATION,Nokia,Nokia,verbose
+XIAOMI,Xiaomi,Xiaomi,latin
+КСИАОМИ,Xiaomi,Xiaomi,translit
+СЯОМИ,Xiaomi,Xiaomi,translit-ru
+XIAOMI REDMI,Redmi,Xiaomi,brand-line
+REDMI,Redmi,Xiaomi,sub-brand
+POCO,POCO,Xiaomi,sub-brand
+APPLE,Apple,Apple,latin
+APPLE IPHONE,Apple,Apple,brand-line
+IPHONE,Apple,Apple,model-as-brand
+АЙФОН,Apple,Apple,translit
+ЭПЛ,Apple,Apple,translit-ru
+ЕПЛ,Apple,Apple,translit-uk
+LENOVO,Lenovo,Lenovo,latin
+ЛЕНОВО,Lenovo,Lenovo,translit
+HUAWEI,Huawei,Huawei,latin
+ХУАВЕЙ,Huawei,Huawei,translit
+ХУАВЕИ,Huawei,Huawei,translit
+LG,LG,LG,latin
+ЛДЖИ,LG,LG,translit
+ЭЛДЖИ,LG,LG,translit-ru
+HTC,HTC,HTC,latin
+НТС,HTC,HTC,cyrillic-word
+МЕИЗУ,Meizu,Meizu,translit
+MEIZU,Meizu,Meizu,latin
+FLY,Fly,Fly,latin
+ФЛАЙ,Fly,Fly,translit
+PRESTIGIO,Prestigio,Prestigio,latin
+ПРЕСТИЖИО,Prestigio,Prestigio,translit
+SONY,Sony,Sony,latin
+СОНИ,Sony,Sony,translit-ru
+СОНІ,Sony,Sony,translit-uk
+SONYERICSSON,Sony Ericsson,Sony,latin
+SONY ERICSSON,Sony Ericsson,Sony,latin
+СОНИЭРИКСОН,Sony Ericsson,Sony,translit-ru
+СОНИ ЭРИКСОН,Sony Ericsson,Sony,translit-ru
+СОНІ ЕРІКСОН,Sony Ericsson,Sony,translit-uk
+NOMI,Nomi,Nomi,latin
+НОМИ,Nomi,Nomi,translit
+MOTOROLA,Motorola,Motorola,latin
+МОТОРОЛА,Motorola,Motorola,translit
+ZTE,ZTE,ZTE,latin
+BRAVIS,Bravis,Bravis,latin
+БРАВИС,Bravis,Bravis,translit
+OPPO,OPPO,BBK Electronics,latin
+HONOR,Honor,Honor,latin
+ХОНОР,Honor,Honor,translit
+ASUS,Asus,Asus,latin
+АСУС,Asus,Asus,translit
+SIEMENS,Siemens,Siemens,latin
+СИМЕНС,Siemens,Siemens,translit-ru
+СІМЕНС,Siemens,Siemens,translit-uk
+ERICSSON,Ericsson,Ericsson,latin
+ЭРИКСОН,Ericsson,Ericsson,translit-ru
+ALCATEL,Alcatel,TCL,latin
+АЛКАТЕЛЬ,Alcatel,TCL,translit
+PHILIPS,Philips,Philips,latin
+ФИЛИПС,Philips,Philips,translit-ru
+ФІЛІПС,Philips,Philips,translit-uk
+PANASONIC,Panasonic,Panasonic,latin
+ПАНАСОНИК,Panasonic,Panasonic,translit
+SIGMA,Sigma,Sigma,latin
+СИГМА,Sigma,Sigma,translit
+VERTEX,Vertex,Vertex,latin
+REALME,realme,BBK Electronics,latin
+VIVO,vivo,BBK Electronics,latin
+TECNO,Tecno,Transsion,latin
+INFINIX,Infinix,Transsion,latin
+ONEPLUS,OnePlus,BBK Electronics,latin
+ONE PLUS,OnePlus,BBK Electronics,latin
+GOOGLE,Google,Google,latin
+PIXEL,Google,Google,model-as-brand
+BLACKBERRY,BlackBerry,BlackBerry,latin
+MICROSOFT,Microsoft,Microsoft,latin
+LUMIA,Microsoft,Microsoft,model-as-brand
+BQ,BQ,BQ,latin
+DOOGEE,Doogee,Doogee,latin
+BLACKVIEW,Blackview,Blackview,latin
+ULEFONE,Ulefone,Ulefone,latin
+UMIDIGI,UMIDIGI,UMIDIGI,latin
+CUBOT,Cubot,Cubot,latin
+OUKITEL,Oukitel,Oukitel,latin
+NUBIA,Nubia,ZTE,latin
+MAXCOM,Maxcom,Maxcom,latin
+ERGO,Ergo,Ergo,latin
+ЭРГО,Ergo,Ergo,translit
+IMPRESSION,Impression,Impression,latin
+ASSISTANT,Assistant,Assistant,latin
+GIGABYTE,Gigabyte,Gigabyte,latin
+FLY IQ,Fly,Fly,brand-line
+EXPLAY,Explay,Explay,latin
+TEXET,teXet,teXet,latin
+DIGMA,Digma,Digma,latin
+PANTECH,Pantech,Pantech,latin
+SHARP,Sharp,Sharp,latin
+TOSHIBA,Toshiba,Toshiba,latin
+ACER,Acer,Acer,latin
+DELL,Dell,Dell,latin
+COOLPAD,Coolpad,Coolpad,latin
+GIONEE,Gionee,Gionee,latin
+ELEPHONE,Elephone,Elephone,latin
+LEAGOO,Leagoo,Leagoo,latin
+HOMTOM,HomTom,HomTom,latin
+BLUBOO,Bluboo,Bluboo,latin
+VKWORLD,VKworld,VKworld,latin
+INOI,INOI,INOI,latin
+S-TELL,S-TELL,S-TELL,latin
+KENEKSI,Keneksi,Keneksi,latin
+ASTRO,Astro,Astro,latin
+VIAAN,Viaan,Viaan,latin
+GRESSO,Gresso,Gresso,latin
+JINGA,Jinga,Jinga,latin
+TEXET TM,teXet,teXet,latin
+VOXTEL,Voxtel,Voxtel,latin
+MOTOROLA MOTO,Motorola,Motorola,brand-line
+MOTO,Motorola,Motorola,sub-brand
+TECHNO,Tecno,Transsion,typo
+REDMOND,Redmond,Redmond,latin
+GSMART,Gigabyte,Gigabyte,sub-brand
+NEFF,Neff,Neff,latin
+THL,THL,THL,latin
+NOUS,Nous,Nous,latin
+SPARK,Tecno,Transsion,sub-brand
+IPPON,Ippon,Ippon,latin
+INFINITY,Infinity,Infinity,latin
+НОКІЯ,Nokia,Nokia,translit-uk
+ЛЖ,LG,LG,translit
+СОНИЕРИКСОН,Sony Ericsson,Sony,translit-ru
+МОТОРОЛЛА,Motorola,Motorola,translit
+САМСУНГХ,Samsung,Samsung,translit-glued
+САМСУНГЕ,Samsung,Samsung,translit-glued
+САМСУНГС,Samsung,Samsung,translit-glued
+СИМЕНСС,Siemens,Siemens,translit-glued

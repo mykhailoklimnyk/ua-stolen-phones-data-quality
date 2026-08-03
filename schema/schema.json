@@ -1,0 +1,258 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality/schema/schema.json",
+  "title": "UA Stolen & Lost Phones — Data Quality Edition, record schema",
+  "description": "One row of the normalised dataset. Source fields are preserved alongside derived ones so that every derivation can be audited against its input. Field titles for the source columns are recovered from the archived MVS schema, which is the only place their meaning was ever documented.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "record_key",
+    "first_seen",
+    "last_seen",
+    "is_present"
+  ],
+  "properties": {
+    "record_key": {
+      "type": "string",
+      "title": "Унікальний ідентифікатор запису",
+      "description": "The source `id`. Verified stable across the MVS→NPU handover: 99.84% of MVS ids are present in the NPU publication."
+    },
+    "ovd": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Назва підрозділу, що зареєстрував інформацію"
+    },
+    "region": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Region of the registering police unit, derived from its name. NULL for railway line departments, which answer to a railway rather than an oblast."
+    },
+    "unit_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Kind of unit: районне управління / управління / відділ / відділення."
+    },
+    "insert_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "title": "Дата внесення інформації",
+      "description": "NULL when the source value falls outside 2004-01-01 … today. The source is 100% ISO-8601 in form but holds values as early as 1900."
+    },
+    "insert_date_implausible": {
+      "type": "boolean",
+      "description": "True when the source carried a date outside the plausible window. Nulled values are counted rather than silently dropped."
+    },
+    "dk": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "title": "Дата реєстрації в журналі єдиного обліку",
+      "description": "Same plausibility window. The raw field reaches back to year 0201."
+    },
+    "nk": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Номер реєстрації в журналі єдиного обліку підрозділу"
+    },
+    "dtl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Деталі",
+      "description": "Empty in 93.1% of records; the remainder mixes country of manufacture, circumstances and duplicated brand text."
+    },
+    "nz_raw": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Марка/модель (як у джерелі)"
+    },
+    "nz_clean": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Uppercased, whitespace-collapsed, quoting removed, Cyrillic homoglyphs resolved to Latin in mixed-script strings only."
+    },
+    "brand": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical brand, or NULL when unresolved. NULL is a legitimate outcome, not an error."
+    },
+    "manufacturer": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Corporate group behind the brand. Separate axis from `brand` because they answer different questions: Redmi and POCO are brands in their own right, both manufactured by Xiaomi. Set to the brand itself where no distinct parent applies, and left as the brand where a later acquisition would misdate most records (Nokia, Motorola)."
+    },
+    "model": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Remainder of the string after the brand. A brand without a model is a normal and useful result."
+    },
+    "nz_method": {
+      "type": "string",
+      "enum": [
+        "exact",
+        "prefix",
+        "glued",
+        "fuzzy",
+        "none",
+        "empty"
+      ],
+      "description": "How the brand was resolved, so coverage is reported per method rather than as one opaque number. glued = brand and model were typed without a separator (NOKIA6300); fuzzy = matched within a small edit distance, for typos (SONI, SAMSYNG)."
+    },
+    "homoglyph_fixed": {
+      "type": "boolean",
+      "description": "True when a Cyrillic look-alike character was replaced. Up to 26.7% of a brand's records depend on this."
+    },
+    "imei_raw": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "ІМЕІ/номер (як у джерелі)"
+    },
+    "imei_norm": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{15}$",
+      "description": "15-digit identifier, or NULL when the source value is not one."
+    },
+    "imei_kind": {
+      "type": "string",
+      "enum": [
+        "IMEI",
+        "IMEISV",
+        "SERIAL",
+        "INVALID"
+      ],
+      "description": "SERIAL = 8-13 digits, plausible but not an IMEI. INVALID = placeholder or unusable."
+    },
+    "imei_digits": {
+      "type": "integer",
+      "description": "Digit count of the source value, before any repair."
+    },
+    "imei_luhn_valid": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Mod-10 check. 83.49% of full-length identifiers pass; failures are reported, never repaired."
+    },
+    "imei_was_repaired": {
+      "type": "boolean",
+      "description": "True when a missing check digit was derived. The check digit carries no information of its own, so restoring it loses nothing."
+    },
+    "tac": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{8}$",
+      "description": "Type Allocation Code — first 8 digits. 20 286 distinct TACs cover 95% of the register."
+    },
+    "tac_legacy": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{6}$",
+      "description": "Pre-2004 TAC (first 6 digits), for records predating the 8-digit allocation."
+    },
+    "fac": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{2}$",
+      "description": "Final Assembly Code, meaningful only under the legacy 6+2 layout."
+    },
+    "snr": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{6}$",
+      "description": "Serial number within the TAC (digits 9-14)."
+    },
+    "check_digit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]$",
+      "description": "Luhn check digit (digit 15) as published; see imei_luhn_valid."
+    },
+    "rbi": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9]{2}$",
+      "description": "Reporting Body Identifier — first 2 digits."
+    },
+    "first_seen": {
+      "type": "string",
+      "format": "date",
+      "description": "First snapshot in which the record appeared."
+    },
+    "last_seen": {
+      "type": "string",
+      "format": "date",
+      "description": "Most recent snapshot in which the record appeared."
+    },
+    "disappeared_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "First snapshot in which the record was absent — a PROXY for case closure, not a confirmation. Never set from a snapshot flagged suspect, and never across the source handover."
+    },
+    "is_present": {
+      "type": "boolean",
+      "description": "Present in the most recently folded snapshot."
+    },
+    "revision_no": {
+      "type": "integer",
+      "description": "Number of observed content versions. Not incremented across the MVS→NPU handover, which rewrote 89% of records in one re-export."
+    },
+    "first_source": {
+      "type": "string",
+      "enum": [
+        "mvs",
+        "npu"
+      ]
+    },
+    "last_source": {
+      "type": "string",
+      "enum": [
+        "mvs",
+        "npu"
+      ]
+    }
+  }
+}

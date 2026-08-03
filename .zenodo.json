@@ -1,0 +1,63 @@
+{
+  "title": "UA Stolen & Lost Phones — Data Quality Edition",
+  "upload_type": "dataset",
+  "description": "<p>A normalised, deduplicated and quality-checked derivative of the Ukrainian public-sector open dataset <em>Інформація про викрадені, втрачені мобільні телефони</em> (Information on stolen and lost mobile phones), published by the National Police of Ukraine on data.gov.ua under CC BY 4.0.</p><p>The source is a single file overwritten on every update, with no record-status field. Neither the lifecycle of a record nor the moment it left the register can be observed from any single download. This edition reconstructs that history from the portal's own revision archive (1,776 snapshots folded from 1,825 portal revisions, 2019-07-15 to 2026-08-01) into a slowly-changing-dimension table, and adds:</p><ul><li>device-identifier normalisation — length repair, Luhn check-digit validation, TAC extraction;</li><li>brand and model resolution from the free-text “Марка/модель” field, including script-mixing repair;</li><li>recovery of the field semantics dropped from the current publisher's JSON Schema;</li><li>lifecycle dates carrying the width of their own uncertainty, since every date here is the day the register was read rather than the day an event happened;</li><li>124,222 closed records and 21,514 that left the register and returned — neither observable in the current publication;</li><li>per-snapshot data-quality reports.</li></ul><p>This is not an official registry and is not affiliated with any government body. Absence of a device from the dataset does not certify anything about it.</p>",
+  "creators": [
+    {
+      "name": "Trofey"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "Klimnyk, Mykhailo",
+      "type": "DataManager",
+      "orcid": "0009-0005-5463-6981"
+    }
+  ],
+  "license": "CC-BY-4.0",
+  "keywords": [
+    "open-data",
+    "ukraine",
+    "mobile-phones",
+    "imei",
+    "data-quality",
+    "normalization",
+    "data.gov.ua",
+    "scd2"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://data.gov.ua/dataset/30b67898-1968-4d99-8058-298b56f22bff",
+      "relation": "isDerivedFrom",
+      "resource_type": "dataset",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://data.gov.ua/dataset/5c6c156f-21ee-42cd-8da3-dcde6828be97",
+      "relation": "isDerivedFrom",
+      "resource_type": "dataset",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality",
+      "relation": "isSupplementTo",
+      "resource_type": "software",
+      "scheme": "url"
+    }
+  ],
+  "subjects": [
+    {
+      "term": "Open data",
+      "identifier": "https://id.loc.gov/authorities/subjects/sh2012003087",
+      "scheme": "url"
+    }
+  ],
+  "language": "ukr",
+  "access_right": "open",
+  "communities": [
+    {
+      "identifier": "open-data"
+    }
+  ],
+  "notes": "Source data published under CC BY 4.0 by the National Police of Ukraine on data.gov.ua (dataset 30b67898-1968-4d99-8058-298b56f22bff), with historical coverage from the archived Ministry of Internal Affairs publication (5c6c156f-21ee-42cd-8da3-dcde6828be97). Produced by the Trofey project (https://trofey.app)."
+}

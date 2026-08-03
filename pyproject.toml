@@ -1,0 +1,58 @@
+[project]
+name = "wantedmt"
+version = "0.1.0"
+description = "Data-quality pipeline for the Ukrainian open dataset of stolen/lost mobile phones (data.gov.ua, WantedMT)"
+requires-python = ">=3.13"
+license = { text = "CC-BY-4.0" }
+dependencies = [
+    "duckdb>=1.4",
+    "httpx>=0.28",
+    "tenacity>=9.0",
+    "structlog>=25.1",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+publish = ["boto3>=1.35"]
+dev = ["pytest>=8.3", "ruff>=0.9", "mypy>=1.14", "mutmut>=3.2", "types-PyYAML>=6.0"]
+
+[project.scripts]
+wantedmt = "wantedmt.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wantedmt"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["duckdb.*", "boto3.*"]
+ignore_missing_imports = true
+
+[tool.mutmut]
+paths_to_mutate = [
+    "src/wantedmt/normalize/text.py",
+    "src/wantedmt/normalize/imei.py",
+    "src/wantedmt/normalize/dates.py",
+    "src/wantedmt/normalize/geo.py",
+    "src/wantedmt/store.py",
+]
+tests_dir = ["tests/"]
+
+[dependency-groups]
+dev = [
+    "mutmut>=3.2",
+]

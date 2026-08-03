@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv sync --all-extras --dev
+
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Types
+        run: uv run mypy
+
+      - name: Tests
+        run: uv run pytest -q
+
+      - name: The dictionaries are actually in the repository
+        run: |
+          test -s dict/brand_aliases.csv
+          test -s dict/model_aliases.csv
+          test -s dict/model_lines.csv
+
+      - name: The history is actually in the repository
+        run: |
+          count=$(find data/history -name '*.parquet' | wc -l)
+          echo "history files: $count"
+          test "$count" -gt 1000
+
+      - name: No personal data reaches a published artefact
+        run: |
+          ! grep -rniE '"(nomer|msisdn|phone)"' --include='*.py' src/wantedmt/normalize/apply.py

@@ -1,0 +1,60 @@
+cff-version: 1.2.0
+title: "UA Stolen & Lost Phones — Data Quality Edition"
+message: >-
+  If you use this dataset, please cite it using the metadata from this file,
+  and attribute the underlying open data to the National Police of Ukraine
+  via data.gov.ua as required by CC BY 4.0.
+type: dataset
+authors:
+  # Entity author: the dataset is a product of the Trofey project, so citations
+  # accrue to the project rather than to an individual.
+  - name: "Trofey"
+    website: "https://trofey.app"
+contact:
+  - name: "Trofey"
+    website: "https://trofey.app"
+url: "https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality"
+repository-code: "https://github.com/mykhailoklimnyk/ua-stolen-phones-data-quality"
+license: CC-BY-4.0
+license-url: "https://creativecommons.org/licenses/by/4.0/"
+version: "0.1.0"
+date-released: "2026-08-01"
+abstract: >-
+  A normalised, deduplicated and quality-checked derivative of the Ukrainian
+  open dataset "Інформація про викрадені, втрачені мобільні телефони"
+  (Information on stolen and lost mobile phones), published by the National
+  Police of Ukraine on data.gov.ua under CC BY 4.0.
+
+  The source is a single file that is overwritten on every update and carries no
+  record status, so neither the lifecycle of a record nor the moment it left the
+  register is observable from any single download. This edition reconstructs
+  that history from the portal's own revision archive (1742 daily snapshots from
+  2019-07-15 onward), and adds device-identifier normalisation (IMEI length
+  repair, Luhn validation, TAC extraction), brand and model resolution from a
+  free-text field, and per-snapshot data-quality reports.
+keywords:
+  - open-data
+  - ukraine
+  - mobile-phones
+  - imei
+  - data-quality
+  - normalization
+  - data.gov.ua
+  - scd2
+references:
+  - type: data
+    title: "Інформація про викрадені, втрачені мобільні телефони"
+    authors:
+      - name: "Національна поліція України"
+    url: "https://data.gov.ua/dataset/30b67898-1968-4d99-8058-298b56f22bff"
+    license: CC-BY-4.0
+    date-released: "2026-02-24"
+  - type: data
+    title: "Інформація про викрадені, втрачені мобільні телефони (архів МВС)"
+    authors:
+      - name: "Міністерство внутрішніх справ України"
+    url: "https://data.gov.ua/dataset/5c6c156f-21ee-42cd-8da3-dcde6828be97"
+    license: CC-BY-4.0
+    notes: >-
+      Publication ceased 2026-04-30; retained as the only source of the
+      2019-2026 history.

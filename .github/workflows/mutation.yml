@@ -1,0 +1,39 @@
+name: Mutation
+
+on:
+  push:
+    tags: ["v*"]
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+jobs:
+  mutmut:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv sync --all-extras --dev
+
+      - name: Mutate the rules the dataset stands on
+        run: uv run mutmut run --max-children 4 || true
+
+      - name: Report
+        run: |
+          uv run mutmut results | tee mutmut.txt
+          survived=$(uv run mutmut results | grep -c '^ *[0-9]*: survived' || true)
+          echo "survived: $survived"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mutmut-results
+          path: mutmut.txt
+
+# mutmut runs on Linux only; on Windows it requires WSL.
+
+

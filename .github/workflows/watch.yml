@@ -1,0 +1,54 @@
+name: Watch the portal
+
+# Times measured, not guessed. Of 89 National Police revisions between 2026-04-07
+# and 2026-08-03, 66 landed in 10:30-10:39 UTC and 78 inside the 10:00 hour;
+# 10:30-15:00 UTC covers 98.9%. The day of the week does not matter — Sat 12 and
+# Sun 13 against Fri 15, so the publisher does not keep office hours. The late
+# run closes the day for the one revision that arrived at 21:00 UTC.
+#
+# The publisher moved this window once already: until 2025-07 the job ran at
+# 10:00 Kyiv (07:00/08:00 UTC, shifting with daylight saving), and since 2025-08
+# it has been 10:30 UTC flat through a DST boundary. Re-measure with
+# `wantedmt timeline` before trusting these crons in a year.
+
+on:
+  schedule:
+    - cron: "45 10 * * *"
+    - cron: "45 11 * * *"
+    - cron: "15 13 * * *"
+    - cron: "0 15 * * *"
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    outputs:
+      new: ${{ steps.check.outputs.new }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv sync
+
+      - id: check
+        run: |
+          set +e
+          uv run wantedmt watch --source npu
+          status=$?
+          set -e
+          case "$status" in
+            0) echo "new=true"  >> "$GITHUB_OUTPUT" ;;
+            3) echo "new=false" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$status" ;;
+          esac

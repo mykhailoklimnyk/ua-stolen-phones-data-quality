@@ -1,0 +1,146 @@
+name: Daily fold
+
+# Runs on the same measured window as the watch workflow — 66 of 89 revisions
+# landed in 10:30-10:39 UTC, and the day of the week makes no difference.
+#
+# The store does not live in git: it is 268 MB, and it is state rather than
+# source. It lives as an asset on the `state` prerelease, is pulled at the start
+# of a run and pushed back at the end. What git gets is the parquet change log
+# and manifest.json — the small, reviewable part.
+#
+# The state asset is built by `wantedmt state`, which withholds the quarantine
+# table and refuses to write a file where a subscriber number is still sitting
+# in DTL. Once the repository is public, release assets are public with it.
+#
+# --recent 60, because a gap self-heals only inside that window: revisions older
+# than the newest N never enter the candidate list, and once the frontier moves
+# past a day it can no longer be folded at all. The number is measured, not
+# picked. Folding costs ~33s a day including the 322 MB download (67s for the
+# two days of 2026-08-02..03), so 60 days is ~35 minutes inside a 120-minute
+# job. And GitHub disables a scheduled workflow after 60 days of repository
+# inactivity, so a longer silent gap cannot happen without a human already
+# being involved.
+#
+# Days already folded cost nothing: store.folded() drops them before any network
+# call, so a wide window is free on the ordinary day. Peak disk is one snapshot
+# at a time — daily folds with lookahead 1 and deletes each file once folded.
+
+on:
+  schedule:
+    - cron: "45 10 * * *"
+    - cron: "45 11 * * *"
+    - cron: "15 13 * * *"
+    - cron: "0 15 * * *"
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+    inputs:
+      recent:
+        description: "How many of the newest revisions to consider"
+        default: "60"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily
+  cancel-in-progress: false
+
+env:
+  STATE_TAG: state
+  STATE_ASSET: state.duckdb
+  TAC_DB: vendor/tac_full.csv
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  fold:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv sync
+
+      - name: Is the portal ahead of us
+        id: watch
+        run: |
+          set +e
+          uv run wantedmt watch --source npu
+          status=$?
+          set -e
+          case "$status" in
+            0) echo "new=true"  >> "$GITHUB_OUTPUT" ;;
+            3) echo "new=false" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$status" ;;
+          esac
+
+      - name: Restore the store from the state release
+        if: steps.watch.outputs.new == 'true'
+        run: |
+          mkdir -p data
+          gh release download "$STATE_TAG" --pattern "$STATE_ASSET" \
+            --output data/wantedmt.duckdb --clobber
+          ls -l data/wantedmt.duckdb
+          df -h / | tail -1
+
+      - name: Refresh the external TAC list
+        if: steps.watch.outputs.new == 'true'
+        run: uv run python scripts/fetch_tac_db.py
+
+      - name: Fold what is new
+        if: steps.watch.outputs.new == 'true'
+        run: |
+          uv run wantedmt daily --source npu \
+            --recent "${{ inputs.recent || 60 }}" --history data/history
+
+      - name: Normalise
+        # --external-tac on every pass, never when someone remembers: build()
+        # re-derives the register's own TAC rows from scratch, so the models
+        # borrowed for 385,665 records are gone at the start of each run. Without
+        # it model coverage drops 96.9% -> 64.5%, quietly, under a 60% gate.
+        if: steps.watch.outputs.new == 'true'
+        run: uv run wantedmt normalize --external-tac "$TAC_DB"
+
+      - name: Data quality
+        if: steps.watch.outputs.new == 'true'
+        run: uv run wantedmt dq
+
+      - name: Export and describe
+        if: steps.watch.outputs.new == 'true'
+        run: |
+          uv run wantedmt export --out data/export
+          uv run wantedmt manifest --out manifest.json --export data/export
+          cat manifest.json
+
+      - name: Commit the change log
+        if: steps.watch.outputs.new == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/history manifest.json
+          if git diff --cached --quiet; then
+            echo "the fold produced no new change log — nothing to commit"
+            exit 0
+          fi
+          git commit -m "Fold the register up to $(jq -r .as_of manifest.json)"
+          git push
+
+      - name: Push the store back
+        if: steps.watch.outputs.new == 'true'
+        run: |
+          uv run wantedmt state --out "$STATE_ASSET"
+          gh release upload "$STATE_TAG" "$STATE_ASSET" --clobber
+
+      - name: Say what happened
+        if: steps.watch.outputs.new == 'true'
+        run: |
+          {
+            echo "### Folded"
+            echo
+            echo '```json'
+            cat manifest.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
