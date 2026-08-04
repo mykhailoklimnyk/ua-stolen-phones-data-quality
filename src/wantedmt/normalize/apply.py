@@ -18,6 +18,7 @@ import structlog
 from ..sql import count
 from . import geo
 from . import tac as tac_dict
+from .text import RESOLVER_VERSION
 from .text import resolve as resolve_nz
 
 log = structlog.get_logger()
@@ -103,6 +104,14 @@ def build_geo(con: duckdb.DuckDBPyConnection) -> int:
 def build_nz_map(con: duckdb.DuckDBPyConnection, workers: int = 0) -> int:
     """Resolve every distinct NZ spelling not yet in the map. Returns new rows."""
     con.execute(NZ_MAP_DDL)
+    con.execute("CREATE TABLE IF NOT EXISTS dict_nz_version (version INTEGER)")
+    stored = con.execute("SELECT max(version) FROM dict_nz_version").fetchone()
+
+    if stored is None or stored[0] != RESOLVER_VERSION:
+        log.info("nz_map.resolver_changed", stored=stored and stored[0], now=RESOLVER_VERSION)
+        con.execute("DELETE FROM dict_nz_mapping")
+        con.execute("DELETE FROM dict_nz_version")
+        con.execute("INSERT INTO dict_nz_version VALUES (?)", [RESOLVER_VERSION])
     con.execute("""
         CREATE OR REPLACE TABLE dict_nz_mapping AS
         SELECT * EXCLUDE (rn) FROM (

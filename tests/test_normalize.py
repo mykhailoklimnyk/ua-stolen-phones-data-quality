@@ -179,3 +179,63 @@ class TestImei:
     def test_tac_is_the_leading_eight_digits(self):
         imei = canonical("35629301123456")
         assert imei is not None and imei[:8] == "35629301"
+
+
+class TestResolutionMethod:
+    """`method` records how a brand was found, and the DQ assertion
+    `resolved_brand_has_provenance` rests on it. Asserting only the brand leaves
+    every branch of the resolver free to move."""
+
+    @pytest.mark.parametrize(
+        ("spelling", "method"),
+        [
+            ("", "empty"),
+            ("   ", "empty"),
+            ("SAMSUNG", "exact"),
+            ("SAMSUNG GALAXY A12", "prefix"),
+            ("SAMSUNGA12", "glued"),
+            ("SAMSNUG", "fuzzy"),
+            ("ЯКАСЬ МАРКА", "none"),
+        ],
+    )
+    def test_each_path_names_itself(self, spelling, method):
+        assert resolve(spelling)["method"] == method
+
+    def test_a_longer_prefix_wins_over_a_shorter_one(self):
+        """APPLE IPHONE is one alias; matching only APPLE would put the model at IPHONE 13."""
+        assert resolve("APPLE IPHONE 13")["model"] == "13"
+
+    @pytest.mark.parametrize(("spelling", "brand"), [("LGX3", "LG"), ("SAMSUNGGALAXY", "Samsung")])
+    def test_a_short_alias_may_only_swallow_a_tail_that_is_not_a_word(self, spelling, brand):
+        """LG + X3 is a model code. LG + PHONE is a sentence, and reading it as a brand
+        turned LGPHONE into an Apple."""
+        assert resolve(spelling)["brand"] == brand
+
+    def test_the_resolver_refuses_when_two_brands_are_equally_close(self):
+        """IPHON sits one edit from IPPON and from IPHONE. Whichever the loop reached first
+        used to win: 994 records rested on that. Refusing costs coverage and buys truth."""
+        assert resolve("IPHON")["brand"] is None
+        assert resolve("IPHON")["method"] == "none"
+
+    def test_a_guitar_is_not_a_telephone(self):
+        assert resolve("EPIPHONE")["brand"] is None
+
+    def test_an_unambiguous_typo_still_resolves(self):
+        assert resolve("SAMSNUG")["brand"] == "Samsung"
+        assert resolve("SONYY")["brand"] == "Sony"
+
+    def test_a_head_too_short_to_be_judged_is_not_guessed_at(self):
+        """Three characters are within one edit of far too much to mean anything."""
+        assert resolve("SON")["method"] in {"none", "exact"}
+
+    def test_the_flags_describe_the_input_that_arrived(self):
+        mixed = resolve("XІAOMІ")
+        assert mixed["homoglyph_fixed"] is True
+        assert mixed["script_mixed"] is True
+        assert mixed["nz_clean"] == "XIAOMI"
+        plain = resolve("SAMSUNG")
+        assert plain["homoglyph_fixed"] is False
+        assert plain["script_mixed"] is False
+
+    def test_whitespace_is_collapsed_before_anything_else_looks_at_it(self):
+        assert resolve("SAMSUNG   galaxy  a12")["nz_clean"] == "SAMSUNG GALAXY A12"

@@ -246,6 +246,16 @@ def nearest(
     return scored[:limit]
 
 
+RESOLVER_VERSION = 2
+"""Bump when resolve() changes its mind about anything.
+
+The spelling map is a cache: build_nz_map only resolves spellings it has not
+seen. Without a version the map keeps yesterday's answers for every spelling
+already in it, and a change to the resolver applies to new arrivals only —
+silently, which is the worst way for it to apply.
+"""
+
+
 def resolve(value: str | None) -> dict[str, object]:
     """Resolve one NZ spelling to brand + model. method records how the brand was found, so …"""
     raw = value or ""
@@ -320,14 +330,21 @@ def resolve(value: str | None) -> dict[str, object]:
         index = _fuzzy_index()
         best: tuple[int, str, str, str] | None = None
 
+        contested = False
+
         for length in range(len(head) - budget, len(head) + budget + 1):
             for alias, brand, manufacturer in index.get(length, ()):
                 distance = levenshtein(head, alias)
 
-                if distance <= budget and (best is None or distance < best[0]):
-                    best = (distance, alias, brand, manufacturer)
+                if distance > budget:
+                    continue
 
-        if best is not None:
+                if best is None or distance < best[0]:
+                    best, contested = (distance, alias, brand, manufacturer), False
+                elif distance == best[0] and brand != best[2]:
+                    contested = True
+
+        if best is not None and not contested:
             model = " ".join(tokens[1:]).strip() or None
 
             return {
