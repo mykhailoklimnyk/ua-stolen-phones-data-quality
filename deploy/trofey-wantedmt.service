@@ -9,7 +9,10 @@ Requires=docker.service
 [Service]
 Type=oneshot
 User=re
-ExecStart=/opt/wantedmt/scripts/deliver.sh
+# Called through bash on purpose: the executable bit is a mode git keeps losing between
+# a Windows checkout and a Linux clone, and it did — the first install landed a 644 file
+# and the unit would have failed at 04:00 with nothing but a permission error to show.
+ExecStart=/bin/bash /opt/wantedmt/scripts/deliver.sh
 # A full run is ~15s; the ceiling is for the 270 MB download on a bad night.
 TimeoutStartSec=1800
 
