@@ -162,11 +162,15 @@ def test_a_thin_dictionary_is_refused_too(tmp_path: Path) -> None:
     assert not list(out.glob("*"))
 
 
-def test_a_phone_shaped_label_stops_the_export(tmp_path: Path) -> None:
+def test_a_phone_shaped_label_from_the_register_stops_the_export(tmp_path: Path) -> None:
     """A subscriber number that reached a brand field would travel to a public lookup —
-    the same scan `state` runs, aimed at the two free-text columns leaving here."""
+    the same scan `state` runs, aimed at the two free-text columns leaving here.
+
+    Register-derived labels are made from the police text, which is exactly where the
+    numbers live, so a phone-shaped one there stops everything.
+    """
     source = tmp_path / "store.duckdb"
-    _store(source, poisoned_brand=PHONE)
+    _store(source, poisoned_brand=PHONE)  # tac index 0 is a register row
     out = tmp_path / "lookup"
 
     with pytest.raises(SystemExit) as raised:
@@ -176,6 +180,25 @@ def test_a_phone_shaped_label_stops_the_export(tmp_path: Path) -> None:
 
     assert "phone-shaped" in str(raised.value)
     assert not list(out.glob("*"))
+
+
+def test_a_numeric_model_name_from_the_outside_catalogue_is_not_a_leak(tmp_path: Path) -> None:
+    """Provenance decides, not shape alone.
+
+    The MIT device catalogue never met a Ukrainian subscriber; measured on the real
+    dictionary 08.08, its three phone-shaped hits are Chinese model codes — SANYECAO
+    201305221, NEKEN 202321212, DOOV 202100908, all starting 20, which is not any
+    operator prefix. Refusing those would refuse every export forever over labels that
+    are simply numeric names, and a guard that can never pass protects nothing.
+    """
+    source = tmp_path / "store.duckdb"
+    _store(source)
+    con = duckdb.connect(str(source))
+    con.execute("UPDATE dict_tac SET model = '201305221' WHERE source = 'external'")
+    con.close()
+    out = _run(tmp_path)
+    models = {r["tac"]: r["model"] for r in _rows(out / "dict_tac.csv")}
+    assert models["35325611"] == "201305221"  # ships, named in the log, not swallowed
 
 
 def test_the_handset_numbers_themselves_are_not_mistaken_for_phones(tmp_path: Path) -> None:
