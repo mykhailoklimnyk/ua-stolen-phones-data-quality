@@ -139,7 +139,14 @@ uv run wantedmt normalize                # перебудувати IMEI + бр�
 uv run wantedmt dq                       # перевірки якості + звіт
 uv run wantedmt unmatched --out docs/unmatched.md   # тижнева черга на розбір
 uv run wantedmt export --out data/export # parquet + агрегації для публікації
+uv run wantedmt lookup-export --out data/lookup   # НЕ для публікації, див. нижче
 ```
+
+`lookup-export` пише дві проєкції, на яких стоїть безкоштовна перевірка IMEI на
+trofey.app: рядок на кожен розшукуваний номер і повний словник TAC. Їх свідомо
+немає ні в `manifest.json`, ні в жодному релізі — цей словник містить каталог
+під ліцензією MIT, який нам можна використовувати, але не можна перевидавати.
+Файли їдуть в одну базу і більше нікуди.
 
 Щоденний прогін згортає лише нове:
 
