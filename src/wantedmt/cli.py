@@ -565,15 +565,29 @@ def cmd_lookup_export(args: argparse.Namespace) -> int:
         # here: a subscriber number that reached a brand or model field would travel to
         # a public-facing lookup. Fifteen-digit IMEIs and eight-digit TACs do not match
         # the pattern — it is anchored at 9 to 13 digits (test_state_export.py proves it).
+        #
+        # PROVENANCE decides, not shape alone. A register row's labels are derived from
+        # the police text, which is where the numbers live — a phone-shaped one there is
+        # a leak and stops everything. An external row comes from the MIT device
+        # catalogue, which never met a Ukrainian subscriber: measured 08.08, its three
+        # hits are Chinese model codes (SANYECAO 201305221, NEKEN 202321212,
+        # DOOV 202100908), all starting 20 — not any operator prefix. Refusing those
+        # would refuse every export forever over labels that are simply numeric names,
+        # so they are named in the log and the run continues.
         leaked = store.con.execute(
-            f"SELECT count(*) FROM ({LOOKUP_TAC_SQL}) "
+            "SELECT source, count(*) FROM dict_tac "
             "WHERE regexp_matches(coalesce(brand, ''), ?) "
-            "OR regexp_matches(coalesce(model, ''), ?)",
+            "OR regexp_matches(coalesce(model, ''), ?) GROUP BY source",
             [DTL_PHONE_PATTERN, DTL_PHONE_PATTERN],
-        ).fetchone()
+        ).fetchall()
+        from_register = sum(int(n) for source, n in leaked if source == "register")
+        from_outside = sum(int(n) for source, n in leaked if source != "register")
 
-        if leaked and int(leaked[0]):
-            refuse(f"{leaked[0]} dictionary labels are phone-shaped")
+        if from_register:
+            refuse(f"{from_register} register-derived dictionary labels are phone-shaped")
+
+        if from_outside:
+            log.warning("lookup_export.numeric_labels", rows=from_outside, source="external")
         folded = store.con.execute(
             "SELECT max(snapshot_date) FROM snapshots WHERE coalesce(status, 'folded') = 'folded'"
         ).fetchone()
