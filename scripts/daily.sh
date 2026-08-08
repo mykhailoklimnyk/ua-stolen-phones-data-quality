@@ -8,6 +8,10 @@
 # Cron (Europe/Kyiv). The source publishes more than once a day, so 06:20 picks
 # up the previous day's final state:
 #   20 6 * * * /opt/wantedmt/scripts/daily.sh >> /var/log/wantedmt.log 2>&1
+#
+# NOT what runs on the Fedora host next to Trofey (#4). There the fold belongs to GitHub
+# Actions and this host only consumes the published store — see scripts/deliver.sh.
+# Running both would give the same source two histories, drifting apart.
 
 set -Eeuo pipefail
 

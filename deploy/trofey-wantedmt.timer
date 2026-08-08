@@ -1,0 +1,13 @@
+[Unit]
+Description=Deliver the published registry to Trofey each night
+
+[Timer]
+# 04:00 Kyiv sits after the last Actions fold of the day (22:00 UTC) and before the site
+# build starts ticking at 05:00 — so the morning pages carry the report this run rendered.
+OnCalendar=*-*-* 04:00:00
+# the host is a homelab machine that sleeps; a missed night runs at the next boot
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

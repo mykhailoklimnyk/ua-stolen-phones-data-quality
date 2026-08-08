@@ -1,0 +1,17 @@
+[Unit]
+# The nightly delivery on the Fedora host (#4): the store that GitHub Actions folded and
+# published becomes the registry behind the Trofey IMEI check, and the quality report the
+# morning site build serves. No folding happens here — see scripts/deliver.sh.
+Description=wantedmt: deliver the published registry to Trofey
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=re
+ExecStart=/opt/wantedmt/scripts/deliver.sh
+# A full run is ~15s; the ceiling is for the 270 MB download on a bad night.
+TimeoutStartSec=1800
+
+[Install]
+WantedBy=multi-user.target
