@@ -68,6 +68,25 @@ fi
 echo "[$(date -Is)] export artefacts"
 $RUN export --out data/export
 
+# The lookup projections for the Trofey IMEI check (Trofey#671). Not release artefacts:
+# the full TAC dictionary carries the MIT catalogue we may use but not republish, so
+# these two files go to one prod Postgres and nowhere else.
+echo "[$(date -Is)] lookup export for the Trofey IMEI check"
+$RUN lookup-export --out data/lookup
+
+# Delivery into that database, which runs in a container on this same host. The literal
+# container name is deliberate — a hash-prefixed name is a known way for this host to
+# break a service silently (Trofey docs/deploy.md), so a missing trofey-ingest-1 has to
+# fail loudly here rather than skip a day of freshness without saying so.
+docker exec trofey-ingest-1 rm -rf /tmp/imei-lookup
+if docker cp data/lookup trofey-ingest-1:/tmp/imei-lookup \
+   && docker exec trofey-ingest-1 python scripts/imei_load.py /tmp/imei-lookup; then
+  echo "[$(date -Is)] lookup delivered"
+else
+  echo "[$(date -Is)] LOOKUP DELIVERY FAILED — вчорашня таблиця в проді лишається" >&2
+  exit 1
+fi
+
 # Weekly on Mondays: what the brand resolver could not place, ranked by cost.
 if [[ "$(date +%u)" == "1" ]]; then
   echo "[$(date -Is)] weekly unmatched review"

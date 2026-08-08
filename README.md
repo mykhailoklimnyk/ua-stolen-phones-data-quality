@@ -141,7 +141,14 @@ uv run wantedmt normalize                # rebuild IMEI + brand/model outputs
 uv run wantedmt dq                        # run checks, render the report
 uv run wantedmt unmatched --out docs/unmatched.md   # weekly review queue
 uv run wantedmt export --out data/export  # publishable parquet + aggregates
+uv run wantedmt lookup-export --out data/lookup   # NOT publishable, see below
 ```
+
+`lookup-export` writes the two projections behind the free IMEI check on
+trofey.app: one row per wanted number, and the full TAC dictionary. They are
+deliberately outside `manifest.json` and outside every release — that dictionary
+includes the MIT-licensed catalogue we may use but may not redistribute. The
+files go to one database and nowhere else.
 
 Daily operation folds only what is new:
 

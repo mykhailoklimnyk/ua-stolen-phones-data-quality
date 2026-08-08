@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import NoReturn
 
 import duckdb
 import httpx
@@ -479,6 +480,128 @@ def cmd_export(args: argparse.Namespace) -> int:
     return 0
 
 
+#: The two projections behind the Trofey IMEI check (Trofey#671). Deliberately NOT part
+#: of `export`: the full TAC dictionary carries the MIT catalogue, which we may use but
+#: may not republish, so these files travel to one prod Postgres and never into a release.
+#: The column list IS the contract — every name here is checked against what DuckDB says
+#: the query returns, so a query that grows a column stops the run instead of shipping it.
+LOOKUP_IMEI_COLUMNS = ("imei", "status", "listed_on")
+LOOKUP_TAC_COLUMNS = ("tac", "brand", "model")
+
+#: The source has eight string fields and no stolen/lost marker on the record itself —
+#: «викрадений/втрачений» lives only in the name of the set (README:32). So the projection
+#: states the one thing the data supports: this number is listed. Forward-compatible if
+#: the portal ever splits it.
+LOOKUP_IMEI_SQL = """
+SELECT imei_norm AS imei,
+       'listed' AS status,
+       CAST(min(insert_date) AS DATE) AS listed_on
+FROM records_normalized
+WHERE is_present AND imei_norm IS NOT NULL
+GROUP BY imei_norm
+ORDER BY imei
+"""
+
+LOOKUP_TAC_SQL = """
+SELECT tac, brand, model FROM dict_tac ORDER BY tac
+"""
+
+
+def _lookup_columns(con: duckdb.DuckDBPyConnection, sql: str) -> tuple[str, ...]:
+    return tuple(row[0] for row in con.execute(f"DESCRIBE {sql}").fetchall())
+
+
+def _lookup_count(con: duckdb.DuckDBPyConnection, sql: str) -> int:
+    row = con.execute(f"SELECT count(*) FROM ({sql})").fetchone()
+
+    return int(row[0]) if row else 0
+
+
+def cmd_lookup_export(args: argparse.Namespace) -> int:
+    """Write the lookup projections for the Trofey IMEI check: two CSVs and a meta file.
+
+    Every guard runs BEFORE a single byte is written, because a half-written export is
+    the one thing the consumer cannot detect: `scripts/imei_load.py` truncates its tables
+    inside one transaction, and yesterday's rows are better than a truncated today's.
+    A file that does get written and then fails a guard is deleted here as well.
+
+    The projections are counted, not trusted: a query that silently stops matching (a
+    renamed column, an emptied table) returns few rows rather than an error, and few rows
+    would replace a million-row registry with a stub that answers «not stolen» to
+    everyone. Hence the floors.
+    """
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    imei_csv = out / "imei_current.csv"
+    tac_csv = out / "dict_tac.csv"
+    meta_json = out / "meta.json"
+    store = Store(Path(args.db))
+
+    def refuse(reason: str) -> NoReturn:
+        for path in (imei_csv, tac_csv, meta_json):
+            path.unlink(missing_ok=True)
+        log.error("lookup_export.refused", reason=reason)
+
+        raise SystemExit(f"refusing to write {out}: {reason}")
+
+    try:
+        for sql, expected in (
+            (LOOKUP_IMEI_SQL, LOOKUP_IMEI_COLUMNS),
+            (LOOKUP_TAC_SQL, LOOKUP_TAC_COLUMNS),
+        ):
+            got = _lookup_columns(store.con, sql)
+
+            if got != expected:
+                refuse(f"projection returns {got}, the contract is {expected}")
+        imei_rows = _lookup_count(store.con, LOOKUP_IMEI_SQL)
+        tac_rows = _lookup_count(store.con, LOOKUP_TAC_SQL)
+
+        if imei_rows < args.min_imei:
+            refuse(f"{imei_rows:,} IMEI rows is below the floor of {args.min_imei:,}")
+
+        if tac_rows < args.min_tac:
+            refuse(f"{tac_rows:,} TAC rows is below the floor of {args.min_tac:,}")
+        # The same scan `state` runs, aimed at the only two free-text columns leaving
+        # here: a subscriber number that reached a brand or model field would travel to
+        # a public-facing lookup. Fifteen-digit IMEIs and eight-digit TACs do not match
+        # the pattern — it is anchored at 9 to 13 digits (test_state_export.py proves it).
+        leaked = store.con.execute(
+            f"SELECT count(*) FROM ({LOOKUP_TAC_SQL}) "
+            "WHERE regexp_matches(coalesce(brand, ''), ?) "
+            "OR regexp_matches(coalesce(model, ''), ?)",
+            [DTL_PHONE_PATTERN, DTL_PHONE_PATTERN],
+        ).fetchone()
+
+        if leaked and int(leaked[0]):
+            refuse(f"{leaked[0]} dictionary labels are phone-shaped")
+        folded = store.con.execute(
+            "SELECT max(snapshot_date) FROM snapshots WHERE coalesce(status, 'folded') = 'folded'"
+        ).fetchone()
+
+        if not (folded and folded[0]):
+            refuse("no folded snapshot: the store has no as-of date to hand over")
+        as_of = str(folded[0])
+        store.con.execute(
+            f"COPY ({LOOKUP_IMEI_SQL}) TO '{imei_csv.as_posix()}' (HEADER, DELIMITER ',')"
+        )
+        store.con.execute(
+            f"COPY ({LOOKUP_TAC_SQL}) TO '{tac_csv.as_posix()}' (HEADER, DELIMITER ',')"
+        )
+        meta_json.write_text(
+            json.dumps(
+                {"as_of": as_of, "imei_rows": imei_rows, "tac_rows": tac_rows},
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+    finally:
+        store.close()
+    log.info("lookup_export.written", out=str(out), as_of=as_of, imei=imei_rows, tac=tac_rows)
+
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     _setup_logging()
     parser = argparse.ArgumentParser(prog="wantedmt", description=__doc__)
@@ -559,6 +682,13 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("export", help="write publishable parquet/csv artefacts")
     p.add_argument("--out", default="data/export")
     p.set_defaults(func=cmd_export)
+    p = sub.add_parser(
+        "lookup-export", help="write the non-public lookup projections for the Trofey IMEI check"
+    )
+    p.add_argument("--out", default="data/lookup")
+    p.add_argument("--min-imei", type=int, default=1_000_000, help="floor below which we refuse")
+    p.add_argument("--min-tac", type=int, default=200_000, help="floor below which we refuse")
+    p.set_defaults(func=cmd_lookup_export)
     args = parser.parse_args(argv)
 
     return int(args.func(args))

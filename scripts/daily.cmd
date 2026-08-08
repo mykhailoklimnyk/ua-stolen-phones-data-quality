@@ -19,4 +19,9 @@ echo [%date% %time%] data quality
 echo [%date% %time%] export
 %PY% -m wantedmt.cli --db data/wantedmt.duckdb export --out data/export
 
+REM The lookup projections for the Trofey IMEI check. Written here, delivered only by
+REM the Fedora script: the prod database lives next to that host, not this one.
+echo [%date% %time%] lookup export
+%PY% -m wantedmt.cli --db data/wantedmt.duckdb lookup-export --out data/lookup
+
 echo [%date% %time%] done
