@@ -8,8 +8,12 @@
 # would need the R2 credentials and the 11 MB TAC catalogue for no gain. `daily.sh` remains
 # the script for a host that owns the pipeline; this one is for a host that consumes it.
 #
-# Cron (Europe/Kyiv), via trofey-wantedmt.timer:
-#   04:00 — after the last Actions fold of the day (22:00 UTC) and before the site build.
+# Runs hourly via trofey-wantedmt.timer (#7).
+#
+# Every exit that is not success says so in the ops group (#9). A systemd oneshot that
+# fails is a red line in `systemctl status` and nowhere else, and the failure this guards
+# against is precisely the silent one: the registry stops moving, the page keeps answering
+# «не в розшуку» with yesterday's confidence, and nobody has a reason to look.
 set -Eeuo pipefail
 
 APP_DIR="${APP_DIR:-/opt/wantedmt}"
@@ -25,6 +29,27 @@ RUN="uv run wantedmt --db $DB"
 
 say() { echo "[$(date -Is)] $*"; }
 
+# The ops group, reached the way the site build reaches it: pointed greps into Trofey's
+# .env, never `set -a; . .env` — a value with parentheses is a syntax error for sh, the
+# export silently does not happen, and the run carries on without credentials.
+ENVF="${TROFEY_ENV:-/opt/trofey/.env}"
+envval() { grep "^$1=" "$ENVF" 2>/dev/null | head -1 | cut -d= -f2-; }
+
+notify() {
+  local tok chat
+  tok="$(envval BOT_TOKEN)"; chat="$(envval OPS_CHAT_ID)"
+  [[ -z "$tok" || -z "$chat" ]] && return 0
+  curl -s -o /dev/null --max-time 20     --data-urlencode "chat_id=$chat" --data-urlencode "text=$1"     "https://api.telegram.org/bot${tok}/sendMessage" || true
+}
+
+# Anything that falls over — a dead network, a broken duckdb, a container that is not
+# there — lands here, including the failures no branch below anticipates.
+on_error() {
+  local line=$1
+  notify "🔴 Trofey: доставка реєстру розшуку впала (deliver.sh, рядок $line). Прод лишається на попередньому зрізі; перевірка IMEI відповідає старими даними."
+}
+trap 'on_error $LINENO' ERR
+
 # 1. Has the published store moved since the last delivery? The asset is 270 MB, and on a
 # day the portal publishes nothing it is byte-identical to yesterday's. The API answer is
 # a few hundred bytes, so asking is free and downloading is not.
@@ -36,6 +61,7 @@ print(asset["updated_at"] if asset else "")' "$STATE_ASSET")"
 
 if [[ -z "$remote" ]]; then
   say "the $STATE_TAG release has no $STATE_ASSET asset — nothing to deliver" >&2
+  notify "🔴 Trofey: у релізі $STATE_TAG немає асета $STATE_ASSET — доставляти нічого. Реєстр розшуку не оновлюється."
   exit 1
 fi
 
@@ -63,6 +89,7 @@ mv "$DB.new" "$DB"
 say "data quality"
 if ! $RUN dq --out dq/reports; then
   say "BLOCKING DQ FAILURE — nothing delivered, production keeps yesterday's registry" >&2
+  notify "🟠 Trofey: блокуючий DQ-фейл на реєстрі розшуку — у прод НЕ доставлено, лишився попередній зріз. Звіт: https://trofey.app/data-quality/wantedmt/latest.html"
   exit 1
 fi
 
@@ -79,7 +106,13 @@ if docker cp data/lookup "$CONTAINER:/tmp/imei-lookup" \
    && docker exec "$CONTAINER" python scripts/imei_load.py /tmp/imei-lookup; then
   echo "$remote" > "$STAMP"
   say "delivered"
+  # One line per REAL delivery — roughly one a day, since the asset moves about as often as
+  # the portal publishes. It is the heartbeat that makes silence meaningful: an ops group
+  # that only ever speaks on failure cannot tell «all good» from «the timer died».
+  read -r stamp rows < <(python3 -c 'import json; m=json.load(open("data/lookup/meta.json")); print(m["as_of"], f"{m[\"imei_rows\"]:,}".replace(",", " "))')
+  notify "🟢 Trofey: реєстр розшуку оновлено — зріз $stamp, $rows номерів."
 else
   say "DELIVERY FAILED — production keeps yesterday's registry" >&2
+  notify "🔴 Trofey: не вдалось залити реєстр розшуку в прод (docker cp / imei_load). Лишився попередній зріз."
   exit 1
 fi
