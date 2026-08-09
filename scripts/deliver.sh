@@ -25,9 +25,17 @@ STATE_ASSET="${STATE_ASSET:-state.duckdb}"
 DB="data/wantedmt.duckdb"
 STAMP="data/.delivered-asset"
 CONTAINER="${TROFEY_CONTAINER:-trofey-ingest-1}"
-RUN="uv run wantedmt --db $DB"
+# Resolved, not assumed. systemd hands a unit a minimal PATH with no ~/.local/bin, while
+# an interactive ssh gets one from the profile — so «works when I run it» and «works at
+# 13:00» are different claims, and #11 was the difference.
+UV="${UV:-$(command -v uv || echo "$HOME/.local/bin/uv")}"
+RUN="$UV run wantedmt --db $DB"
 
 say() { echo "[$(date -Is)] $*"; }
+
+#: A command that will not start is not an opinion about the data (#11). Kept separate so
+#: the ops group is never sent to read a quality report about a missing binary.
+NOT_RUNNABLE=127
 
 # The ops group, reached the way the site build reaches it: pointed greps into Trofey's
 # .env, never `set -a; . .env` — a value with parentheses is a syntax error for sh, the
@@ -49,6 +57,12 @@ on_error() {
   notify "🔴 Trofey: доставка реєстру розшуку впала (deliver.sh, рядок $line). Прод лишається на попередньому зрізі; перевірка IMEI відповідає старими даними."
 }
 trap 'on_error $LINENO' ERR
+
+if [[ ! -x "$UV" ]] && ! command -v "$UV" >/dev/null 2>&1; then
+  say "uv not found at $UV" >&2
+  notify "🔴 Trofey: доставка реєстру не запустилась — не знайдено uv ($UV). Це середовище, не дані: прод лишився на попередньому зрізі."
+  exit 1
+fi
 
 # 1. Has the published store moved since the last delivery? The asset is 270 MB, and on a
 # day the portal publishes nothing it is byte-identical to yesterday's. The API answer is
@@ -87,7 +101,18 @@ mv "$DB.new" "$DB"
 # /data-quality/wantedmt/latest.html (Trofey#680), so it is written even on a red run —
 # an honest report about a bad day beats a fresh-looking one about nothing.
 say "data quality"
-if ! $RUN dq --out dq/reports; then
+set +e
+$RUN dq --out dq/reports
+dq_status=$?
+set -e
+
+if [[ $dq_status -eq $NOT_RUNNABLE ]]; then
+  say "cannot run $UV — nothing delivered" >&2
+  notify "🔴 Trofey: доставка реєстру не запустилась — не знайдено uv ($UV). Це середовище, не дані: прод лишився на попередньому зрізі."
+  exit 1
+fi
+
+if [[ $dq_status -ne 0 ]]; then
   say "BLOCKING DQ FAILURE — nothing delivered, production keeps yesterday's registry" >&2
   notify "🟠 Trofey: блокуючий DQ-фейл на реєстрі розшуку — у прод НЕ доставлено, лишився попередній зріз. Звіт: https://trofey.app/data-quality/wantedmt/latest.html"
   exit 1
@@ -109,7 +134,11 @@ if docker cp data/lookup "$CONTAINER:/tmp/imei-lookup" \
   # One line per REAL delivery — roughly one a day, since the asset moves about as often as
   # the portal publishes. It is the heartbeat that makes silence meaningful: an ops group
   # that only ever speaks on failure cannot tell «all good» from «the timer died».
-  read -r stamp rows < <(python3 -c 'import json; m=json.load(open("data/lookup/meta.json")); print(m["as_of"], f"{m[\"imei_rows\"]:,}".replace(",", " "))')
+  # no f-string here: quoting it through the shell is how the success path stayed broken
+  # until the first real delivery would have run it (#11)
+  read -r stamp rows < <(python3 -c 'import json
+m = json.load(open("data/lookup/meta.json"))
+print(m["as_of"], format(m["imei_rows"], ",").replace(",", " "))')
   notify "🟢 Trofey: реєстр розшуку оновлено — зріз $stamp, $rows номерів."
 else
   say "DELIVERY FAILED — production keeps yesterday's registry" >&2
