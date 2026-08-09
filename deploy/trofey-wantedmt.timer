@@ -2,10 +2,18 @@
 Description=Deliver the published registry to Trofey each night
 
 [Timer]
-# 04:00 Kyiv sits after the last Actions fold of the day (22:00 UTC) and before the site
-# build starts ticking at 05:00 — so the morning pages carry the report this run rendered.
-OnCalendar=*-*-* 04:00:00
-# the host is a homelab machine that sleeps; a missed night runs at the next boot
+# Hourly, not once a night (#7). A fixed 04:00 meant a phone reported stolen during the
+# day waited until the next morning to start answering «wanted» — the wrong shape for a
+# check people run standing in front of a seller.
+#
+# A tick costs one API call: deliver.sh compares the published asset's updated_at BEFORE
+# downloading anything, so the 23 ticks a day that find nothing finish in under a second.
+#
+# This bounds OUR delay, not the chain's. The asset itself can only move when Actions
+# folds (five crons a day), and the portal publishes about daily — 98.9% of revisions land
+# in a 10:30-15:00 UTC window. Hourly removes the part of the lag that was ours.
+OnCalendar=hourly
+# the host is a homelab machine that sleeps; a missed run happens at the next boot
 Persistent=true
 RandomizedDelaySec=300
 
