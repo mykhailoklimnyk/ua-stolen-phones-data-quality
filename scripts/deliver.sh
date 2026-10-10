@@ -182,9 +182,16 @@ $RUN lookup-export --out data/lookup
 # (Trofey docs/deploy.md), so a missing container fails here loudly instead of skipping a
 # day of freshness without saying so.
 say "delivering to $CONTAINER"
-docker exec "$CONTAINER" rm -rf /tmp/imei-lookup
-if docker cp data/lookup "$CONTAINER:/tmp/imei-lookup" \
+#
+# Streamed through `tar`, not `docker cp` (Trofey#1085): the container runs as a non-root
+# user on a read-only root, where `docker cp` is refused outright — tmpfs included — and,
+# even where it is not, leaves files owned by the host uid that the service cannot delete.
+# Unpacking inside the container makes the files the service's own, under its /tmp.
+if tar -C data -cf - lookup \
+     | docker exec -i "$CONTAINER" sh -c 'rm -rf /tmp/imei-lookup && mkdir /tmp/imei-lookup && tar -xf - -C /tmp/imei-lookup --strip-components=1 --no-same-owner' \
    && docker exec "$CONTAINER" python scripts/imei_load.py /tmp/imei-lookup; then
+  # /tmp is a size-capped tmpfs counted against the container's memory: free the 40 MB now
+  docker exec "$CONTAINER" rm -rf /tmp/imei-lookup || true
   echo "$remote" > "$STAMP"
   clear_streak
   say "delivered"
@@ -199,6 +206,6 @@ print(m["as_of"], format(m["imei_rows"], ",").replace(",", " "))')
   notify "🟢 Trofey: реєстр розшуку оновлено — зріз $stamp, $rows номерів."
 else
   say "DELIVERY FAILED — production keeps yesterday's registry" >&2
-  notify "🔴 Trofey: не вдалось залити реєстр розшуку в прод (docker cp / imei_load). Лишився попередній зріз."
+  notify "🔴 Trofey: не вдалось залити реєстр розшуку в прод (передача в контейнер / imei_load). Лишився попередній зріз."
   exit 1
 fi
