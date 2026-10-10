@@ -82,9 +82,11 @@ $RUN lookup-export --out data/lookup
 # container name is deliberate — a hash-prefixed name is a known way for this host to
 # break a service silently (Trofey docs/deploy.md), so a missing trofey-ingest-1 has to
 # fail loudly here rather than skip a day of freshness without saying so.
-docker exec trofey-ingest-1 rm -rf /tmp/imei-lookup
-if docker cp data/lookup trofey-ingest-1:/tmp/imei-lookup \
+# Streamed through `tar`, not `docker cp` — the container's root is read-only (see deliver.sh).
+if tar -C data -cf - lookup \
+     | docker exec -i trofey-ingest-1 sh -c 'rm -rf /tmp/imei-lookup && mkdir /tmp/imei-lookup && tar -xf - -C /tmp/imei-lookup --strip-components=1 --no-same-owner' \
    && docker exec trofey-ingest-1 python scripts/imei_load.py /tmp/imei-lookup; then
+  docker exec trofey-ingest-1 rm -rf /tmp/imei-lookup || true
   echo "[$(date -Is)] lookup delivered"
 else
   echo "[$(date -Is)] LOOKUP DELIVERY FAILED — вчорашня таблиця в проді лишається" >&2
