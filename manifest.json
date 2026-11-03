@@ -1,10 +1,10 @@
 {
   "dataset": "ua-stolen-phones-data-quality",
-  "as_of": "2026-11-02",
-  "observations": 1862,
+  "as_of": "2026-11-03",
+  "observations": 1863,
   "records": {
-    "total": 1189428,
-    "present": 1065042,
+    "total": 1189434,
+    "present": 1065048,
     "closed": 124386
   },
   "coverage": {
@@ -15,43 +15,43 @@
   "artefacts": {
     "agg_by_brand.csv": {
       "bytes": 13065,
-      "sha256": "492788b3d6376eaca367ec87609c09e395383494cde710774c8fd1f2be20414e"
+      "sha256": "fe560e44bee2c7731b2bec4771288e0df4ab5b9e879401684d21b9bdc4be4950"
     },
     "agg_by_ovd.csv": {
       "bytes": 258597,
-      "sha256": "371f6449840ca96571bab4623d9ecc1854540bab0e0eeecbe040f1c910266dda"
+      "sha256": "7d20bcbc3a294eecb631c968b0d29576eae2f279e6869331b48cd69215fe234f"
     },
     "agg_by_year.csv": {
       "bytes": 545,
-      "sha256": "499353fd8def10c517250b3993afb49e4634fefb3ecef2571a8fd6df7e0b3fa8"
+      "sha256": "48180b942aef83ecb7717e76e6874bb317972064c329dc991b902fb00f7d22db"
     },
     "agg_closures.csv": {
       "bytes": 21711,
       "sha256": "ad6028a097f9fab4926a69368c73e5e81e434641e053e0207b6e40fddf01092b"
     },
     "agg_monthly_coverage.csv": {
-      "bytes": 3055,
-      "sha256": "b8ab330729c5bb45656eeb8b28cdbfb7d979d54a540f54375c4aa4adc75cc403"
+      "bytes": 3056,
+      "sha256": "8567dd15eae9b58f15f6543294a2d0aa02d31601e044c6faab5fa1f00c53a863"
     },
     "agg_observations.csv": {
-      "bytes": 46314,
-      "sha256": "6eac6bc54c42fef13ef6de9110de52a803044f7e267a59593d781dbbf5b329bc"
+      "bytes": 46339,
+      "sha256": "0fe5b9cf3c3ff7a89c4fae9835b904f5b35aee6fbc277cc0238db61c0697e77b"
     },
     "dict_tac.csv": {
       "bytes": 468780,
-      "sha256": "41c37d25d9051f9de49d3422044b7098890fb9a24863c982eedf9f5687c59258"
+      "sha256": "667591c5524437664bf36027fbd17dfc328daf2f6539fa955e5a62de2d11afb0"
     },
     "record_changes.parquet": {
-      "bytes": 11753506,
-      "sha256": "b19f161de59787a8c5c6f5e4912e17a0e5bf2cdad8a9e2ba3276713480cf3273"
+      "bytes": 11754937,
+      "sha256": "ea9b149abb36c91c9cbc97c9ef3080f2abf7453ecc9aa4e520f86d5d0c5b2d8d"
     },
     "records.parquet": {
-      "bytes": 56417164,
-      "sha256": "a2a0cc682c855240a378483b296a5a62ca1f4254d4f2931ba3eba9cdc9b4491d"
+      "bytes": 56427855,
+      "sha256": "3c61bd212b95f4e85a89d066691a1b2b4dff3d78e8d3c546fc1298c59d5644fd"
     },
     "snapshots.csv": {
-      "bytes": 676068,
-      "sha256": "51ea03b1ce7e3733d0d451617b0b6d772f2406a6470f6bd2dac2895c96656cb2"
+      "bytes": 676418,
+      "sha256": "f0a9f88fef5e0e731c78f93770b5294c83cb4c0774f38a388c79563d8d3865fe"
     }
   }
 }
